@@ -2,11 +2,54 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { PermissionsAndroid } from 'react-native';
 
-const AddClothes = ({ onBack, navigation }) => {
+/*const checkPhotoInStorage = async () => {
+  try {
+    const storedPhotoUri = await AsyncStorage.getItem('user_photos');
+    if (storedPhotoUri !== null) {
+      console.log('Fotoğraf başarıyla kaydedilmiş:', storedPhotoUri);
+    } else {
+      console.log('Kaydedilmiş fotoğraf bulunamadı.');
+    }
+  } catch (error) {
+    console.error('Fotoğrafı kontrol etme hatası:', error);
+  }
+};*/
+
+const AddClothes = ({ navigation }) => {
+  
   const [previewImage, setPreviewImage] = useState(null);
 
   const handleChoosePhotoFromCamera = async () => {
+    const requestStoragePermission = async () => {
+      try {
+        const granted = await PermissionsAndroid.requestMultiple([
+          PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
+          PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+        ]);
+        if (
+          granted['android.permission.READ_EXTERNAL_STORAGE'] === PermissionsAndroid.RESULTS.GRANTED &&
+          granted['android.permission.WRITE_EXTERNAL_STORAGE'] === PermissionsAndroid.RESULTS.GRANTED
+        ) {
+          console.log('Yerel depo izinleri başarıyla alındı.');
+        } else {
+          console.log('Yerel depo izinleri reddedildi veya iptal edildi.');
+        }
+      } catch (error) {
+        console.error('Yerel depo izinlerini alma hatası:', error);
+      }
+    };
+    
+    const savePhotoToStorage = async (photoUri) => {
+      try {
+        await AsyncStorage.setItem('user_photos', photoUri);
+        console.log('Fotoğraf başarıyla kaydedildi.');
+      } catch (error) {
+        console.error('Fotoğrafı kaydetme hatası:', error);
+      }
+    };
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
       alert('Kamera izni reddedildi!');
@@ -22,9 +65,7 @@ const AddClothes = ({ onBack, navigation }) => {
 
     if (!result.cancelled) {
       setPreviewImage(result.uri);
-      // Fotoğrafı gardroba eklemek için bir işlev çağrısı yapılabilir
-      // Örneğin:
-      // onAddToWardrobe(result.uri);
+      savePhotoToStorage(result.uri); // Fotoğrafı async storage'a kaydet
     }
   };
 
@@ -44,9 +85,7 @@ const AddClothes = ({ onBack, navigation }) => {
 
     if (!result.cancelled) {
       setPreviewImage(result.uri);
-      // Fotoğrafı gardroba eklemek için bir işlev çağrısı yapılabilir
-      // Örneğin:
-      // onAddToWardrobe(result.uri);
+      savePhotoToStorage(result.uri); // Fotoğrafı async storage'a kaydet
     }
   };
 
@@ -108,5 +147,5 @@ const styles = StyleSheet.create({
     height: 200,
   },
 });
-<AddClothes onConfirm={handleAddToWardrobe} />
+
 export default AddClothes;
