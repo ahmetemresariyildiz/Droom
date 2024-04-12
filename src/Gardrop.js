@@ -9,6 +9,12 @@ const Gardrop = ({ navigation, existingClothes }) => {
   const [selectedClothes, setSelectedClothes] = useState([]); // Seçilen kıyafetleri saklayacak state
   const [modalVisible, setModalVisible] = useState(false); // Modal görünürlüğünü saklayacak state
   const [modalMessage, setModalMessage] = useState(''); // Modal içeriğini saklayacak state
+  const handleAddToWardrobe = (photoURI) => {
+    // Gardroba eklemek için gerekli işlemleri gerçekleştir
+    // Örneğin, bir veritabanına veya depolama alanına fotoğrafı ekleyebilirsiniz
+    // Ardından, ekleme işleminin başarılı olduğuna dair bir geribildirim gösterebilirsiniz
+    console.log("Fotoğraf başarıyla gardroba eklendi:", photoURI);
+  };
 
   // Kıyafet ekleme işlevi
   const addClothes = (newClothes) => {
