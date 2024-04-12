@@ -1,64 +1,60 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ImageBackground } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ImageBackground, Image } from 'react-native';
 
 const HomeScreen = ({ navigation }) => {
-  const backgroundStyle = {
-    backgroundColor: '#FFFDD0', // Açık bir krem rengi
-  };
-
   return (
     <ImageBackground source={require('./images/OIG3.jpg')} style={styles.background}>
       <View style={styles.container}>
         <TouchableOpacity style={[styles.button, styles.kiyafetEkleButton]} onPress={() => navigation.navigate('AddClothes')}>
+          <Image source={require('./images/buttons/AddClothesButton.png')} style={styles.buttonIcon} />
           <Text style={styles.buttonText}>Kıyafet Ekle</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.button, styles.gardropButton]} onPress={() => navigation.navigate('Gardrop')}>
+          <Image source={require('./images/buttons/GardropButton.png')} style={styles.buttonIcon} />
           <Text style={styles.buttonText}>Gardrop</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.button, styles.kombinYapButton]} onPress={() => navigation.navigate('KombinYap')}>
+          <Image source={require('./images/buttons/CombineButton.png')} style={styles.buttonIcon} />
           <Text style={styles.buttonText}>Kombin Yap</Text>
         </TouchableOpacity>
       </View>
     </ImageBackground>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    // backgroundColor: 'rgb(255, 253, 208)', // Ana ekran arka planı krem rengi
+    flexDirection: 'column',
   },
-  
   background: {
     flex: 1,
     resizeMode: "cover",
     justifyContent: "center"
   },
-  
   button: {
-    padding: 10,
-    borderRadius: 5,
-    marginVertical: 10,
-    width: 200,
+    width: 100,
+    height: 100,
+    marginBottom: 10,
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
+    // borderWidth: 1,
+    top: 80,
+  },
+  buttonIcon: {
+    width: '100%', // Görselin butona göre genişlemesini sağlar
+    height: '100%', // Görselin butona göre genişlemesini sağlar
+    resizeMode: 'contain', // İçeriğin butona sığmasını sağlar
+    position: 'absolute', // Görselin konumunu ayarlar
+    top: -15, // Butonun en üstüne hizalar
   },
   buttonText: {
-    color: 'white',
-    fontSize: 18,
-  },
-  kiyafetEkleButton: {
-    backgroundColor: 'blue', // Kıyafet Ekle butonunun arka planı mavi
-  },
-  gardropButton: {
-    backgroundColor: 'brown', // Gardrop yazısının arka planı kahverengi
-  },
-  kombinYapButton: {
-    backgroundColor: 'green', // Kombin Yap yazısının arka planı mavi'den yeşile belirsiz geçiş
-    borderWidth: 1,
-    borderColor: 'blue',
+    color: 'black',
+    fontSize: 15,
+    position: 'absolute', // Metnin konumunu ayarlar
+    bottom: 10, // Butonun en altına hizalar
   },
 });
 
