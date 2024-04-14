@@ -1,47 +1,62 @@
 import React, { useState, useEffect } from 'react';
-import { View, Image, TouchableOpacity, StyleSheet, Text } from 'react-native';
+import { View, Image, TouchableOpacity, StyleSheet, Text, ScrollView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Ionicons } from '@expo/vector-icons'; // Geri butonu için Ionicons kullanıyoruz
+import { Ionicons } from '@expo/vector-icons';
 
-const Gardrop = () => {
+const Gardrop = ({ navigation }) => {
   const [photos, setPhotos] = useState([]);
 
   useEffect(() => {
     const loadPhotos = async () => {
       try {
-        // Kullanıcının kaydettiği fotoğrafları yerel depolamadan al
         const storedPhotos = await AsyncStorage.getItem('user_photos');
-        storedPhotos != null ? JSON.parse(storedPhotos) : null;
-        console.log (storedPhotos)
+        console.log('Stored photos:', storedPhotos);
         if (storedPhotos !== null) {
-          setPhotos(JSON.parse(storedPhotos));
+          const parsedPhotos = JSON.parse(storedPhotos);
+        console.log('Fotoğraf çevrildi' , parsedPhotos);
+          if (Array.isArray(parsedPhotos)) {
+            setPhotos(parsedPhotos);
+          } else {
+            console.log(storedPhotos)
+            let x=[[storedPhotos]]
+            console.log(x[0])
+            setPhotos([storedPhotos]); // Tek bir fotoğrafı bir diziye ekleyelim
+          }
+        } else {
+          setPhotos([]);
+          console.log('asd') // Yükleme başarısız olduğunda boş dizi kullanılmalı
         }
       } catch (error) {
         console.error('Fotoğrafları alma hatası:', error);
       }
     };
-
+    
+  
     loadPhotos();
   }, []);
 
-  return (
-    
-    <View>
+  const handlePhotoPress = (photo) => {
+    // Burada fotoğrafın büyütüldüğü bir modal açılabilir veya başka bir işlem yapılabilir
+  };
 
+  return (
+    <ScrollView>
+      <View>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color="black" />
         </TouchableOpacity>
         {/* Gardrop yazısı */}
         <Text style={styles.title}>Gardrop</Text>
-
-      {photos.map((photo, index) => (
-        <TouchableOpacity key={index} onPress={() => handlePhotoPress(photo)}>
-          <Image source={{ uri: photo }} style={{ width: 100, height: 100 }} />
-        </TouchableOpacity>
-      ))}
-    </View>
+        {photos && photos.map((photo, index) => (
+          <TouchableOpacity key={index} onPress={() => handlePhotoPress(photo)}>
+            <Image source={{ uri: photo.slice(1,-1) }} style={{ width: 100, height: 100 }} />
+          </TouchableOpacity>
+        ))}
+      </View>
+    </ScrollView>
   );
 };
+
 const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',

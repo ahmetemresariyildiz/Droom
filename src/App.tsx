@@ -15,24 +15,21 @@ const App = () => {
           name="Ana Sayfa"
           component={HomeScreen}
           options={{
-            headerShown: false,
-            cardStyle: { backgroundColor: 'rgb(255, 253, 208)' },
+            headerShown: false,           
           }}
         />
         <Stack.Screen
           name="Gardrop"
           component={Gardrop}
           options={{
-            headerShown: false,
-            cardStyle: { backgroundColor: 'rgb(255, 253, 208)' },
+            headerShown: false,            
           }}
         />
         <Stack.Screen
           name="AddClothes"
           component={AddClothes}
           options={{
-            headerShown: false,
-            cardStyle: { backgroundColor: 'rgb(255, 253, 208)' },
+            headerShown: false,           
           }}
         />
       </Stack.Navigator>
