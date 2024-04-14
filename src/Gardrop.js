@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Image, TouchableOpacity } from 'react-native';
+import { View, Image, TouchableOpacity, StyleSheet, Text } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons'; // Geri butonu için Ionicons kullanıyoruz
 
 const Gardrop = () => {
   const [photos, setPhotos] = useState([]);
@@ -10,6 +11,8 @@ const Gardrop = () => {
       try {
         // Kullanıcının kaydettiği fotoğrafları yerel depolamadan al
         const storedPhotos = await AsyncStorage.getItem('user_photos');
+        storedPhotos != null ? JSON.parse(storedPhotos) : null;
+        console.log (storedPhotos)
         if (storedPhotos !== null) {
           setPhotos(JSON.parse(storedPhotos));
         }
@@ -22,7 +25,15 @@ const Gardrop = () => {
   }, []);
 
   return (
+    
     <View>
+
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <Ionicons name="arrow-back" size={24} color="black" />
+        </TouchableOpacity>
+        {/* Gardrop yazısı */}
+        <Text style={styles.title}>Gardrop</Text>
+
       {photos.map((photo, index) => (
         <TouchableOpacity key={index} onPress={() => handlePhotoPress(photo)}>
           <Image source={{ uri: photo }} style={{ width: 100, height: 100 }} />
@@ -31,5 +42,65 @@ const Gardrop = () => {
     </View>
   );
 };
+const styles = StyleSheet.create({
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 10,
+  },
+  backButton: {
+    position: 'absolute',
+    top: 20,
+    left: 20,
+    zIndex: 1,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginLeft: 10,
+  },
+  button: {
+    backgroundColor: 'blue',
+    padding: 10,
+    borderRadius: 5,
+    marginTop: 10,
+    alignSelf: 'center',
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 18,
+  },
+  item: {
+    alignItems: 'center',
+    margin: 10,
+  },
+  selectedItem: {
+    alignItems: 'center',
+    margin: 10,
+    borderColor: 'blue',
+    borderWidth: 2,
+    borderRadius: 5,
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  modalText: {
+    fontSize: 18,
+    marginBottom: 20,
+  },
+  modalButton: {
+    backgroundColor: 'blue',
+    padding: 10,
+    borderRadius: 5,
+  },
+  modalButtonText: {
+    color: 'white',
+    fontSize: 16,
+  },
+});
 
 export default Gardrop;

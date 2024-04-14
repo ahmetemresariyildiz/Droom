@@ -44,7 +44,8 @@ const AddClothes = ({ navigation }) => {
     
     const savePhotoToStorage = async (photoUri) => {
       try {
-        await AsyncStorage.setItem('user_photos', photoUri);
+        const jsonValue = JSON.stringify(photoUri);
+        await AsyncStorage.setItem('user_photos', jsonValue);
         console.log('Fotoğraf başarıyla kaydedildi.');
       } catch (error) {
         console.error('Fotoğrafı kaydetme hatası:', error);
@@ -62,10 +63,10 @@ const AddClothes = ({ navigation }) => {
       aspect: [4, 3],
       quality: 1,
     });
-
+      console.log (result.assets[0].uri)
     if (!result.cancelled) {
-      setPreviewImage(result.uri);
-      savePhotoToStorage(result.uri); // Fotoğrafı async storage'a kaydet
+      setPreviewImage(result.assets[0].uri);
+      savePhotoToStorage(result.assets[0].uri); // Fotoğrafı async storage'a kaydet
     }
   };
 
@@ -84,8 +85,8 @@ const AddClothes = ({ navigation }) => {
     });
 
     if (!result.cancelled) {
-      setPreviewImage(result.uri);
-      savePhotoToStorage(result.uri); // Fotoğrafı async storage'a kaydet
+      setPreviewImage(result.assets[0].uri);
+      savePhotoToStorage(result.assets[0].uri); // Fotoğrafı async storage'a kaydet
     }
   };
 
