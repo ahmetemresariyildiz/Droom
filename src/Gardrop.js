@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 
 const Gardrop = ({ navigation }) => {
+
   const [photos, setPhotos] = useState([]);
 
   useEffect(() => {
@@ -13,14 +14,16 @@ const Gardrop = ({ navigation }) => {
         console.log('Stored photos:', storedPhotos);
         if (storedPhotos !== null) {
           const parsedPhotos = JSON.parse(storedPhotos);
-        console.log('Fotoğraf çevrildi' , parsedPhotos);
+          console.log('Fotoğraf çevrildi' , parsedPhotos);
           if (Array.isArray(parsedPhotos)) {
             setPhotos(parsedPhotos);
+            console.log('Fotoğraf URL\'leri:', parsedPhotos); // Eklenen satır
           } else {
             console.log(storedPhotos)
             let x=[[storedPhotos]]
             console.log(x[0])
             setPhotos([storedPhotos]); // Tek bir fotoğrafı bir diziye ekleyelim
+            console.log('Fotoğraf URL\'leri:', [storedPhotos]); // Eklenen satır
           }
         } else {
           setPhotos([]);
@@ -31,14 +34,13 @@ const Gardrop = ({ navigation }) => {
       }
     };
     
-  
     loadPhotos();
   }, []);
 
   const handlePhotoPress = (photo) => {
     // Burada fotoğrafın büyütüldüğü bir modal açılabilir veya başka bir işlem yapılabilir
   };
-
+  console.log('Photos:', photos);
   return (
     <ScrollView>
       <View>
@@ -47,11 +49,12 @@ const Gardrop = ({ navigation }) => {
         </TouchableOpacity>
         {/* Gardrop yazısı */}
         <Text style={styles.title}>Gardrop</Text>
-        {photos && photos.map((photo, index) => (
-          <TouchableOpacity key={index} onPress={() => handlePhotoPress(photo)}>
-            <Image source={{ uri: photo.slice(1,-1) }} style={{ width: 100, height: 100 }} />
-          </TouchableOpacity>
-        ))}
+        {photos.map((photo, index) => (
+        <TouchableOpacity key={index} onPress={() => handlePhotoPress(photo)}>
+          <Image source={{ uri: photo }} style={{ width: 100, height: 100 }} />
+        </TouchableOpacity>
+))}
+
       </View>
     </ScrollView>
   );

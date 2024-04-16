@@ -1,11 +1,12 @@
+
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PermissionsAndroid } from 'react-native';
 
-/*const checkPhotoInStorage = async () => {
+/*onst checkPhotoInStorage = async () => {
   try {
     const storedPhotoUri = await AsyncStorage.getItem('user_photos');
     if (storedPhotoUri !== null) {
@@ -44,13 +45,41 @@ const AddClothes = ({ navigation }) => {
     
     const savePhotoToStorage = async (photoUri) => {
       try {
-        const jsonValue = JSON.stringify(photoUri);
+        let photos = [];
+    
+        const storedPhotos = await AsyncStorage.getItem('user_photos');
+        console.log('Depolanan Fotoğraflar:', storedPhotos);
+    
+        if (storedPhotos !== null) {
+          photos = JSON.parse(storedPhotos);
+          console.log('Eski Fotoğraflar:', photos);
+        } else {
+          console.log('Kaydedilmiş fotoğraf bulunamadı.');
+        }
+    
+        // Eğer photoUri bir dizi değilse, onu bir diziye dönüştür
+        if (!Array.isArray(photoUri)) {
+          photoUri = [photoUri];
+        }
+    
+        // Yeni fotoğrafları dizinin sonuna ekleyin
+        photos = photos.concat(photoUri); // concat metodu kullanılıyor
+        console.log('Yeni Fotoğraflar:', photos);
+    
+        const jsonValue = JSON.stringify(photos);
+        console.log('Depolanacak JSON:', jsonValue);
+    
         await AsyncStorage.setItem('user_photos', jsonValue);
         console.log('Fotoğraf başarıyla kaydedildi.');
       } catch (error) {
         console.error('Fotoğrafı kaydetme hatası:', error);
       }
     };
+    
+    
+    
+    
+    
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
       alert('Kamera izni reddedildi!');
