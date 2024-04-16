@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PermissionsAndroid } from 'react-native';
 
-/*onst checkPhotoInStorage = async () => {
+/*const checkPhotoInStorage = async () => {
   try {
     const storedPhotoUri = await AsyncStorage.getItem('user_photos');
     if (storedPhotoUri !== null) {
