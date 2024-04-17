@@ -13,7 +13,7 @@ const HomeScreen = ({ navigation }) => {
           <Image source={require('./images/buttons/GardropButton.png')} style={styles.buttonIcon} />
           <Text style={styles.buttonText}>Gardrop</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.button, styles.kombinYapButton]} onPress={() => navigation.navigate('KombinYap')}>
+        <TouchableOpacity style={[styles.button, styles.kombinYapButton]} onPress={() => navigation.navigate('Combine')}>
           <Image source={require('./images/buttons/CombineButton.png')} style={styles.buttonIcon} />
           <Text style={styles.buttonText}>Kombin Yap</Text>
         </TouchableOpacity>

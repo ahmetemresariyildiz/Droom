@@ -4,6 +4,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import Gardrop from './Gardrop'; 
 import HomeScreen from './HomeScreen';
 import AddClothes from './AddClothes';
+import Combine from './Combine'
 
 const Stack = createStackNavigator();
 
@@ -32,6 +33,15 @@ const App = () => {
             headerShown: false,           
           }}
         />
+
+        <Stack.Screen
+          name="Combine"
+          component={Combine}
+          options={{
+            headerShown: false,           
+          }}
+        />
+
       </Stack.Navigator>
     </NavigationContainer>
   );

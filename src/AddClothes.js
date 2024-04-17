@@ -6,19 +6,6 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PermissionsAndroid } from 'react-native';
 
-/*const checkPhotoInStorage = async () => {
-  try {
-    const storedPhotoUri = await AsyncStorage.getItem('user_photos');
-    if (storedPhotoUri !== null) {
-      console.log('Fotoğraf başarıyla kaydedilmiş:', storedPhotoUri);
-    } else {
-      console.log('Kaydedilmiş fotoğraf bulunamadı.');
-    }
-  } catch (error) {
-    console.error('Fotoğrafı kontrol etme hatası:', error);
-  }
-};*/
-
 const AddClothes = ({ navigation }) => {
   
   const [previewImage, setPreviewImage] = useState(null);
@@ -129,7 +116,7 @@ const AddClothes = ({ navigation }) => {
         <Text style={styles.buttonText}>Kamera ile Kıyafet Seç</Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.button} onPress={handleChoosePhotoFromGallery}>
-        <Text style={styles.buttonText}>Galeriden Kıyafet Seç</Text>
+       <Text style={styles.buttonText}>Galeriden Kıyafet Seç</Text>
       </TouchableOpacity>
       {previewImage && (
         <View style={styles.imageContainer}>
@@ -141,27 +128,30 @@ const AddClothes = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'flex-start',
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
     alignItems: 'center',
+  },
+  button: {
+    backgroundColor: 'brown',
+    paddingVertical: 20,
+    paddingHorizontal: 40,
+    borderRadius: 5,
+    marginTop: 20,
   },
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 20,
+    textAlign: 'center',
+    marginTop: 20, 
+    color: 'black', 
   },
   backButton: {
     position: 'absolute',
-    top: 20,
+    top: 25,
     left: 20,
     zIndex: 1,
-  },
-  button: {
-    backgroundColor: 'blue',
-    padding: 10,
-    borderRadius: 5,
-    marginBottom: 20,
   },
   buttonText: {
     color: 'white',
@@ -173,8 +163,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   image: {
-    width: 200,
-    height: 200,
+    width: 400,
+    height: 650,
   },
 });
 
