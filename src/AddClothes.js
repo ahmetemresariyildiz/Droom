@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -9,6 +8,39 @@ import { PermissionsAndroid } from 'react-native';
 const AddClothes = ({ navigation }) => {
   
   const [previewImage, setPreviewImage] = useState(null);
+
+  const savePhotoToStorage = async (photoUri) => {
+    try {
+      let photos = [];
+  
+      const storedPhotos = await AsyncStorage.getItem('user_photos');
+      console.log('Depolanan Fotoğraflar:', storedPhotos);
+  
+      if (storedPhotos !== null) {
+        photos = JSON.parse(storedPhotos);
+        console.log('Eski Fotoğraflar:', photos);
+      } else {
+        console.log('Kaydedilmiş fotoğraf bulunamadı.');
+      }
+  
+      // Eğer photoUri bir dizi değilse, onu bir diziye dönüştür
+      if (!Array.isArray(photoUri)) {
+        photoUri = [photoUri];
+      }
+  
+      // Yeni fotoğrafları dizinin sonuna ekleyin
+      photos = photos.concat(photoUri); // concat metodu kullanılıyor
+      console.log('Yeni Fotoğraflar:', photos);
+  
+      const jsonValue = JSON.stringify(photos);
+      console.log('Depolanacak JSON:', jsonValue);
+  
+      await AsyncStorage.setItem('user_photos', jsonValue);
+      console.log('Fotoğraf başarıyla kaydedildi.');
+    } catch (error) {
+      console.error('Fotoğrafı kaydetme hatası:', error);
+    }
+  };
 
   const handleChoosePhotoFromCamera = async () => {
     const requestStoragePermission = async () => {
@@ -29,43 +61,6 @@ const AddClothes = ({ navigation }) => {
         console.error('Yerel depo izinlerini alma hatası:', error);
       }
     };
-    
-    const savePhotoToStorage = async (photoUri) => {
-      try {
-        let photos = [];
-    
-        const storedPhotos = await AsyncStorage.getItem('user_photos');
-        console.log('Depolanan Fotoğraflar:', storedPhotos);
-    
-        if (storedPhotos !== null) {
-          photos = JSON.parse(storedPhotos);
-          console.log('Eski Fotoğraflar:', photos);
-        } else {
-          console.log('Kaydedilmiş fotoğraf bulunamadı.');
-        }
-    
-        // Eğer photoUri bir dizi değilse, onu bir diziye dönüştür
-        if (!Array.isArray(photoUri)) {
-          photoUri = [photoUri];
-        }
-    
-        // Yeni fotoğrafları dizinin sonuna ekleyin
-        photos = photos.concat(photoUri); // concat metodu kullanılıyor
-        console.log('Yeni Fotoğraflar:', photos);
-    
-        const jsonValue = JSON.stringify(photos);
-        console.log('Depolanacak JSON:', jsonValue);
-    
-        await AsyncStorage.setItem('user_photos', jsonValue);
-        console.log('Fotoğraf başarıyla kaydedildi.');
-      } catch (error) {
-        console.error('Fotoğrafı kaydetme hatası:', error);
-      }
-    };
-    
-    
-    
-    
     
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
@@ -134,7 +129,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   button: {
-    backgroundColor: 'brown',
+    backgroundColor: 'dimgray',
     paddingVertical: 20,
     paddingHorizontal: 40,
     borderRadius: 5,
