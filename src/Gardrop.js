@@ -7,9 +7,8 @@ const Gardrop = ({ navigation }) => {
   const [photos, setPhotos] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedPhotos, setSelectedPhotos] = useState([]);
-  const [selectedPhoto, setSelectedPhoto] = useState(null);
-  const [isMarking, setIsMarking] = useState(null);
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(null);
+  const [isMarking, setIsMarking] = useState(null);
   const [isDeleteActive, setIsDeleteActive] = useState(false);
   const [isCombineActive, setIsCombineActive] = useState(false);
 
@@ -53,7 +52,6 @@ const Gardrop = ({ navigation }) => {
         setSelectedPhotos([...selectedPhotos, photo]);
       }
     } else {
-      setSelectedPhoto(photo);
       setSelectedPhotoIndex(index);
       setModalVisible(true);
     }
@@ -92,21 +90,17 @@ const Gardrop = ({ navigation }) => {
       { cancelable: true }
     );
   };
-  
 
   const navigateToCombineScreen = () => {
     navigation.navigate('Combine', { selectedPhotos: selectedPhotos });
-
   };
   
   const handleCombine = () => {
     navigateToCombineScreen();
   };
-  
 
   const closeModal = () => {
     setModalVisible(false);
-    setSelectedPhoto(null);
     setSelectedPhotoIndex(null);
   };
 
@@ -137,19 +131,21 @@ const Gardrop = ({ navigation }) => {
           </TouchableOpacity>
         )}
       />
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={closeModal}
-      >
-        <View style={styles.modalContainer}>
-          <Image source={{ uri: selectedPhoto }} style={styles.fullSizeImage} />
-          <View style={styles.closeButtonContainer}>
-            <Button title="Kapat" onPress={closeModal} />
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={modalVisible}
+          onRequestClose={closeModal}
+          >
+          <View style={styles.modalContainer}>
+            <Image source={{ uri: photos[selectedPhotoIndex] }} style={styles.modalImage} />
+            <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
+              <Text style={styles.closeButtonText}>Kapat</Text>
+            </TouchableOpacity>
           </View>
-        </View>
-      </Modal>
+        </Modal>
+
+
       {isDeleteActive && (
         <TouchableOpacity
           style={[styles.actionButton, styles.deleteButton]}
@@ -209,7 +205,7 @@ const styles = StyleSheet.create({
   selectedImage: {
     borderColor: 'black',
   },
-  fullSizeImage: {
+  modalImage: {
     width: '100%',
     height: '100%',
     resizeMode: 'contain',
@@ -245,6 +241,19 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
   },
+  closeButton: {
+    position: 'relative',
+    top: -100,
+    right: 0,
+    backgroundColor: 'black',
+    borderRadius: 5,
+    padding: 8,
+  },
+  closeButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  
 });
 
 export default Gardrop;

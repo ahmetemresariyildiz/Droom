@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity, Modal, Button, ScrollView } from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity, Modal, Button, ScrollView, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { PanGestureHandler, State } from 'react-native-gesture-handler';
 
-const Combine = ({ navigation }) => {
+const Combine = ({ navigation, route, selectedPhoto }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [galleryPhotos, setGalleryPhotos] = useState([]);
-  const [renderedGalleryPhotos, setRenderedGalleryPhotos] = useState(null);
+  const [renderedGalleryPhotos, setRenderedGalleryPhotos] = useState([]);
   const [selectedPhotos, setSelectedPhotos] = useState([]);
+  const [combinedPhotos, setCombinedPhotos] = useState([]);
+  const translateX = new Animated.Value(0); // TranslateX değerini Animated.Value ile tanımlayın
 
   const fetchPhotos = async () => {
     try {
@@ -20,19 +23,18 @@ const Combine = ({ navigation }) => {
   };
 
   useEffect(() => {
+    if (route.params && route.params.selectedPhotos) {
+      setSelectedPhotos(route.params.selectedPhotos);
+    }
+  }, [route.params]);
+
+  useEffect(() => {
     fetchPhotos();
   }, []);
 
   useEffect(() => {
-    if (galleryPhotos.length > 0) {
-      setRenderedGalleryPhotos(renderGalleryPhoto());
-    }
-  }, [galleryPhotos]);
-
-  useEffect(() => {
     setRenderedGalleryPhotos(renderGalleryPhoto());
   }, [galleryPhotos, selectedPhotos]);
-  
 
   const renderGalleryPhoto = () => {
     const rows = [];
@@ -68,34 +70,74 @@ const Combine = ({ navigation }) => {
     } else {
       setSelectedPhotos([...selectedPhotos, index]);
     }
+    setRenderedGalleryPhotos(renderGalleryPhoto()); // Galeriyi güncelle
   };
+    
 
   const handleCombine = () => {
-    console.log('Seçilen fotoğraflar:', selectedPhotos.map((index) => galleryPhotos[index]));
-    setModalVisible(false); // Popup'ı kapat
-    setSelectedPhotos([]); // İşaretlenen fotoğrafları sıfırla
-    navigation.navigate('Combine', { selectedPhotos: selectedPhotos.map((index) => galleryPhotos[index]) });
+    const selectedPhotosData = selectedPhotos.map((index) => galleryPhotos[index]);
+    setCombinedPhotos(selectedPhotosData);
+    setModalVisible(false);
+    navigation.navigate('Combine', { selectedPhotos: selectedPhotosData });
+    setSelectedPhotos([]);
+    setRenderedGalleryPhotos(renderGalleryPhoto()); // Galeriyi güncelle
+  };
+  
+
+  const handleGestureEvent = Animated.event(
+    [{ nativeEvent: { translationX: translateX } }],
+    { useNativeDriver: true }
+  );
+
+  const handleGestureStateChange = (event) => {
+    if (event.nativeEvent.state === State.ACTIVE) {
+      Animated.spring(translateX, {
+        toValue: 0,
+        useNativeDriver: true,
+      }).start();
+    }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Kombin Yap</Text>
-      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-        <Ionicons name="arrow-back" size={24} color="black" />
-      </TouchableOpacity>
-
+      <Text style={[styles.title, { position: 'absolute', top: 0 }]}>Kombin Yap</Text>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <Ionicons name="arrow-back" size={24} color="black" />
+        </TouchableOpacity>
+      <View style={styles.combinedPhotosContainer}>
+        {combinedPhotos.map((photoUri, index) => (
+          <Image key={index} source={{ uri: photoUri }} style={styles.galleryImage} />
+        ))}
+      </View>
+      
       <TouchableOpacity style={styles.combineButton} onPress={() => setModalVisible(true)}>
         <Ionicons name="add" size={24} color="white" />
       </TouchableOpacity>
 
-      <Modal animationType="slide" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
         <View style={styles.modalContainer}>
           <ScrollView>
             {renderedGalleryPhotos}
           </ScrollView>
+          <View style={styles.imageContainer}>
+            <PanGestureHandler
+              onGestureEvent={handleGestureEvent}
+              onHandlerStateChange={handleGestureStateChange}
+            >
+              <Animated.Image
+                source={ null }
+                style={[styles.image, { transform: [{ translateX: translateX }] }]}
+              />
+            </PanGestureHandler>
+          </View>
           <View style={styles.buttonContainer}>
             <Button title="Kapat" onPress={() => setModalVisible(false)} />
-            <Button title="Kombin Yap" onPress={handleCombine} />
+            <Button title="Combine" onPress={handleCombine} />
           </View>
         </View>
       </Modal>
@@ -103,10 +145,11 @@ const Combine = ({ navigation }) => {
   );
 };
 
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   title: {
     fontSize: 20,
@@ -138,6 +181,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
+  imageContainer: {
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 20,
+  },
+  image: {
+    width: 200,
+    height: 200,
+  },
   galleryImage: {
     width: 100,
     height: 100,
@@ -159,6 +211,5 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
 });
-
 
 export default Combine;
