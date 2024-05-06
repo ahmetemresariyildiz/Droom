@@ -4,37 +4,113 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 
-const Combine = ({ navigation, route, selectedPhoto }) => {
+const Combine = ({ navigation, route }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [galleryPhotos, setGalleryPhotos] = useState([]);
-  const [renderedGalleryPhotos, setRenderedGalleryPhotos] = useState([]);
   const [selectedPhotos, setSelectedPhotos] = useState([]);
   const [combinedPhotos, setCombinedPhotos] = useState([]);
-  const translateX = new Animated.Value(0); // TranslateX değerini Animated.Value ile tanımlayın
-
-  const fetchPhotos = async () => {
-    try {
-      const jsonValue = await AsyncStorage.getItem('user_photos');
-      const photos = jsonValue != null ? JSON.parse(jsonValue) : [];
-      setGalleryPhotos(photos);
-    } catch (e) {
-      console.error('Error fetching photos from AsyncStorage:', e);
-    }
-  };
+  const [gestureStates, setGestureStates] = useState([]);
 
   useEffect(() => {
     if (route.params && route.params.selectedPhotos) {
       setSelectedPhotos(route.params.selectedPhotos);
     }
+    fetchPhotos();
   }, [route.params]);
 
   useEffect(() => {
-    fetchPhotos();
-  }, []);
+    const photosWithGestureStates = selectedPhotos.map(() => ({
+      x: new Animated.Value(0),
+      y: new Animated.Value(0),
+    }));
+    setGestureStates(photosWithGestureStates);
+  }, [selectedPhotos]);
+  
 
   useEffect(() => {
-    setRenderedGalleryPhotos(renderGalleryPhoto());
-  }, [galleryPhotos, selectedPhotos]);
+    setCombinedPhotos(selectedPhotos.map(index => galleryPhotos[index]));
+  }, [selectedPhotos, galleryPhotos]);
+
+  const renderCombinedPhotos = () => {
+    return combinedPhotos.map((photo, index) => {
+      // URI kontrolü
+      if (!photo || !photo.uri) {
+        console.error('Invalid URI for photo at index:', index);
+        return null;
+      }
+      const handleGestureEvent = Animated.event(
+        [{ nativeEvent: { translationX: gestureStates[index].x, translationY: gestureStates[index].y } }],
+        { useNativeDriver: false }
+      );
+
+      const handleGestureStateChange = ({ nativeEvent }, index) => {
+        if (nativeEvent.oldState === State.ACTIVE) {
+          const { translationX, translationY } = nativeEvent;
+          const updatedCombinedPhotos = combinedPhotos.map((item, idx) => {
+            if (idx === index) {
+              return {
+                ...item,
+                x: item.x + translationX,
+                y: item.y + translationY,
+              };
+            }
+            return item;
+          });
+          setCombinedPhotos(updatedCombinedPhotos);
+      
+          // gestureStates dizisini güncelle
+          const updatedGestureStates = [...gestureStates];
+          updatedGestureStates[index] = {
+            x: new Animated.Value(0),
+            y: new Animated.Value(0),
+          };
+          setGestureStates(updatedGestureStates);
+        }
+      };
+      
+      
+
+      return (
+        <PanGestureHandler
+          key={index}
+          onGestureEvent={handleGestureEvent}
+          onHandlerStateChange={handleGestureStateChange}
+        >
+          <Animated.View
+            style={[
+              styles.combinedPhotoContainer,
+              { transform: [{ translateX: gestureStates[index].x }, { translateY: gestureStates[index].y }] },
+            ]}
+          >
+            <Image source={{ uri: photo.uri }} style={styles.combinedPhotoImage} />
+          </Animated.View>
+        </PanGestureHandler>
+      );
+    });
+  };
+
+  const fetchPhotos = async () => {
+    try {
+      const jsonValue = await AsyncStorage.getItem('user_photos');
+      const photos = jsonValue ? JSON.parse(jsonValue) : [];
+      // Galeri fotoğraflarını al ve fotoğraf nesnelerini oluştur
+      const galleryPhotos = photos.map(photoUri => {
+        if (!photoUri || typeof photoUri !== 'string') {
+          console.error('Invalid photo URI:', photoUri);
+          return null;
+        }
+        return {
+          uri: photoUri,
+        };
+      });
+      // Galeri fotoğraflarını güncelle
+      setGalleryPhotos(galleryPhotos.filter(photo => photo !== null)); // Null olanları filtrele
+    } catch (e) {
+      console.error('Error fetching photos from AsyncStorage:', e);
+    }
+  };
+  
+  
 
   const renderGalleryPhoto = () => {
     const rows = [];
@@ -42,15 +118,17 @@ const Combine = ({ navigation, route, selectedPhoto }) => {
       const rowPhotos = [];
       for (let j = 0; j < 4 && i + j < galleryPhotos.length; j++) {
         const index = i + j;
+        const photo = galleryPhotos[index];
+        // URI kontrolü
+        if (!photo || !photo.uri) {
+          console.error('Invalid URI for photo at index:', index);
+          continue; // Geçersiz fotoğrafı atla ve bir sonrakine geç
+        }
         rowPhotos.push(
           <View key={`${i}_${j}`} style={styles.photoContainer}>
-            <Image source={{ uri: galleryPhotos[index] }} style={styles.galleryImage} />
+            <Image source={{ uri: photo.uri }} style={styles.galleryImage} />
             <TouchableOpacity onPress={() => togglePhotoSelection(index)} style={styles.selectButton}>
-              {selectedPhotos.includes(index) ? (
-                <Ionicons name="checkmark-circle" size={35} color="green" />
-              ) : (
-                <Ionicons name="checkmark-circle-outline" size={35} color="gray" />
-              )}
+              <Ionicons name={selectedPhotos.includes(index) ? "checkmark-circle" : "checkmark-circle-outline"} size={35} color={selectedPhotos.includes(index) ? "green" : "gray"} />
             </TouchableOpacity>
           </View>
         );
@@ -61,59 +139,39 @@ const Combine = ({ navigation, route, selectedPhoto }) => {
         </View>
       );
     }
-    return rows;
-  };
-
-  const togglePhotoSelection = (index) => {
-    if (selectedPhotos.includes(index)) {
-      setSelectedPhotos(selectedPhotos.filter((photoIndex) => photoIndex !== index));
-    } else {
-      setSelectedPhotos([...selectedPhotos, index]);
-    }
-    setRenderedGalleryPhotos(renderGalleryPhoto()); // Galeriyi güncelle
-  };
-    
-
-  const handleCombine = () => {
-    const selectedPhotosData = selectedPhotos.map((index) => galleryPhotos[index]);
-    setCombinedPhotos(selectedPhotosData);
-    setModalVisible(false);
-    navigation.navigate('Combine', { selectedPhotos: selectedPhotosData });
-    setSelectedPhotos([]);
-    setRenderedGalleryPhotos(renderGalleryPhoto()); // Galeriyi güncelle
+    return (
+      <ScrollView>
+        {rows}
+      </ScrollView>
+    );
   };
   
 
-  const handleGestureEvent = Animated.event(
-    [{ nativeEvent: { translationX: translateX } }],
-    { useNativeDriver: true }
-  );
-
-  const handleGestureStateChange = (event) => {
-    if (event.nativeEvent.state === State.ACTIVE) {
-      Animated.spring(translateX, {
-        toValue: 0,
-        useNativeDriver: true,
-      }).start();
-    }
+  const togglePhotoSelection = (index) => {
+    setSelectedPhotos(prevSelected => prevSelected.includes(index) ? prevSelected.filter(photoIndex => photoIndex !== index) : [...prevSelected, index]);
   };
+
+  const handleCombine = () => {
+    const selectedPhotosData = selectedPhotos.map(index => galleryPhotos[index]);
+    setCombinedPhotos(selectedPhotosData);
+    setModalVisible(false);
+    setSelectedPhotos([]);
+  };
+  
+  
 
   return (
     <View style={styles.container}>
       <Text style={[styles.title, { position: 'absolute', top: 0 }]}>Kombin Yap</Text>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="black" />
-        </TouchableOpacity>
+      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <Ionicons name="arrow-back" size={24} color="black" />
+      </TouchableOpacity>
       <View style={styles.combinedPhotosContainer}>
-        {combinedPhotos.map((photoUri, index) => (
-          <Image key={index} source={{ uri: photoUri }} style={styles.galleryImage} />
-        ))}
+        {renderCombinedPhotos()}
       </View>
-      
       <TouchableOpacity style={styles.combineButton} onPress={() => setModalVisible(true)}>
         <Ionicons name="add" size={24} color="white" />
       </TouchableOpacity>
-
       <Modal
         animationType="slide"
         transparent={true}
@@ -122,19 +180,10 @@ const Combine = ({ navigation, route, selectedPhoto }) => {
       >
         <View style={styles.modalContainer}>
           <ScrollView>
-            {renderedGalleryPhotos}
+            <View style={styles.combinedPhotosContainer}>
+              {renderGalleryPhoto()}
+            </View>
           </ScrollView>
-          <View style={styles.imageContainer}>
-            <PanGestureHandler
-              onGestureEvent={handleGestureEvent}
-              onHandlerStateChange={handleGestureStateChange}
-            >
-              <Animated.Image
-                source={ null }
-                style={[styles.image, { transform: [{ translateX: translateX }] }]}
-              />
-            </PanGestureHandler>
-          </View>
           <View style={styles.buttonContainer}>
             <Button title="Kapat" onPress={() => setModalVisible(false)} />
             <Button title="Combine" onPress={handleCombine} />
@@ -209,6 +258,18 @@ const styles = StyleSheet.create({
     top: 0,
     right: 0,
     zIndex: 1,
+  },
+  combinedPhotosContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+  },
+  combinedPhotoContainer: {
+    margin: 5,
+  },
+  combinedPhotoImage: {
+    width: 100,
+    height: 100,
   },
 });
 
