@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity, Modal, Button, ScrollView, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { PanGestureHandler, State } from 'react-native-gesture-handler';
+import { PanGestureHandler, State, PinchGestureHandler } from 'react-native-gesture-handler';
 
 const Combine = ({ navigation, route }) => {
   const [modalVisible, setModalVisible] = useState(false);
@@ -22,95 +22,108 @@ const Combine = ({ navigation, route }) => {
     const photosWithGestureStates = selectedPhotos.map(() => ({
       x: new Animated.Value(0),
       y: new Animated.Value(0),
+      scale: new Animated.Value(1), // Add scale value for pinch gesture
     }));
     setGestureStates(photosWithGestureStates);
   }, [selectedPhotos]);
-  
 
   useEffect(() => {
     setCombinedPhotos(selectedPhotos.map(index => galleryPhotos[index]));
   }, [selectedPhotos, galleryPhotos]);
 
+  const handleTogglePhotoSelection = (index) => {
+    setSelectedPhotos(prevSelected =>
+      prevSelected.includes(index)
+        ? prevSelected.filter(photoIndex => photoIndex !== index)
+        : [...prevSelected, index]
+    );
+  };
+
+  const handleCombine = () => {
+    const selectedPhotosData = selectedPhotos.map(index => galleryPhotos[index]);
+    setCombinedPhotos(selectedPhotosData);
+    setModalVisible(false);
+    setSelectedPhotos([]);
+  };
+
+  const CombinedPhoto = ({ photo, index }) => {
+    const gestureStatesRef = gestureStates[index];
+    const initialScale = useRef(new Animated.Value(1)).current;
+    const scale = useRef(new Animated.Value(1)).current;
+  
+    const handlePanGestureEvent = Animated.event(
+      [{ nativeEvent: { translationX: gestureStatesRef.x, translationY: gestureStatesRef.y } }],
+      { useNativeDriver: false }
+    );
+  
+    const handlePinchGestureEvent = Animated.event(
+      [{ nativeEvent: { scale: scale } }],
+      { useNativeDriver: false }
+    );
+  
+    const handlePanGestureStateChange = ({ nativeEvent }) => {
+      if (nativeEvent.oldState === State.ACTIVE) {
+        gestureStatesRef.x.extractOffset();
+        gestureStatesRef.y.extractOffset();
+        gestureStatesRef.x.setValue(0);
+        gestureStatesRef.y.setValue(0);
+      }
+    };
+  
+    const handlePinchGestureStateChange = ({ nativeEvent }) => {
+      if (nativeEvent.oldState === State.ACTIVE) {
+        initialScale.setValue(initialScale._value * scale._value); // Güncel ölçek değerini ayarla
+        scale.setValue(1);
+        scale.setOffset(0);
+      }
+    };
+  
+    return (
+      <PinchGestureHandler
+        onGestureEvent={handlePinchGestureEvent}
+        onHandlerStateChange={handlePinchGestureStateChange}
+      >
+        <Animated.View style={{ transform: [{ scale: Animated.multiply(initialScale, scale).interpolate({
+                inputRange: [0.5, 3],
+                outputRange: [0.5, 3],
+                extrapolate: 'clamp'
+              }) }] }}>
+          <PanGestureHandler
+            onGestureEvent={handlePanGestureEvent}
+            onHandlerStateChange={handlePanGestureStateChange}
+          >
+            <Animated.View
+              style={[
+                styles.combinedPhotoContainer,
+                {
+                  transform: [
+                    { translateX: gestureStatesRef.x },
+                    { translateY: gestureStatesRef.y },
+                  ],
+                },
+              ]}
+            >
+              <Image source={{ uri: photo.uri }} style={styles.combinedPhotoImage} />
+            </Animated.View>
+          </PanGestureHandler>
+        </Animated.View>
+      </PinchGestureHandler>
+    );
+  };
+  
+  
+  
+  
+
   const renderCombinedPhotos = () => {
     return combinedPhotos.map((photo, index) => {
-      // URI kontrolü
       if (!photo || !photo.uri) {
         console.error('Invalid URI for photo at index:', index);
         return null;
       }
-      const handleGestureEvent = Animated.event(
-        [{ nativeEvent: { translationX: gestureStates[index].x, translationY: gestureStates[index].y } }],
-        { useNativeDriver: false }
-      );
-
-      const handleGestureStateChange = ({ nativeEvent }, index) => {
-        if (nativeEvent.oldState === State.ACTIVE) {
-          const { translationX, translationY } = nativeEvent;
-          const updatedCombinedPhotos = combinedPhotos.map((item, idx) => {
-            if (idx === index) {
-              return {
-                ...item,
-                x: item.x + translationX,
-                y: item.y + translationY,
-              };
-            }
-            return item;
-          });
-          setCombinedPhotos(updatedCombinedPhotos);
-      
-          // gestureStates dizisini güncelle
-          const updatedGestureStates = [...gestureStates];
-          updatedGestureStates[index] = {
-            x: new Animated.Value(0),
-            y: new Animated.Value(0),
-          };
-          setGestureStates(updatedGestureStates);
-        }
-      };
-      
-      
-
-      return (
-        <PanGestureHandler
-          key={index}
-          onGestureEvent={handleGestureEvent}
-          onHandlerStateChange={handleGestureStateChange}
-        >
-          <Animated.View
-            style={[
-              styles.combinedPhotoContainer,
-              { transform: [{ translateX: gestureStates[index].x }, { translateY: gestureStates[index].y }] },
-            ]}
-          >
-            <Image source={{ uri: photo.uri }} style={styles.combinedPhotoImage} />
-          </Animated.View>
-        </PanGestureHandler>
-      );
+      return <CombinedPhoto key={index} photo={photo} index={index} />;
     });
   };
-
-  const fetchPhotos = async () => {
-    try {
-      const jsonValue = await AsyncStorage.getItem('user_photos');
-      const photos = jsonValue ? JSON.parse(jsonValue) : [];
-      // Galeri fotoğraflarını al ve fotoğraf nesnelerini oluştur
-      const galleryPhotos = photos.map(photoUri => {
-        if (!photoUri || typeof photoUri !== 'string') {
-          console.error('Invalid photo URI:', photoUri);
-          return null;
-        }
-        return {
-          uri: photoUri,
-        };
-      });
-      // Galeri fotoğraflarını güncelle
-      setGalleryPhotos(galleryPhotos.filter(photo => photo !== null)); // Null olanları filtrele
-    } catch (e) {
-      console.error('Error fetching photos from AsyncStorage:', e);
-    }
-  };
-  
-  
 
   const renderGalleryPhoto = () => {
     const rows = [];
@@ -119,16 +132,22 @@ const Combine = ({ navigation, route }) => {
       for (let j = 0; j < 4 && i + j < galleryPhotos.length; j++) {
         const index = i + j;
         const photo = galleryPhotos[index];
-        // URI kontrolü
         if (!photo || !photo.uri) {
           console.error('Invalid URI for photo at index:', index);
-          continue; // Geçersiz fotoğrafı atla ve bir sonrakine geç
+          continue;
         }
         rowPhotos.push(
           <View key={`${i}_${j}`} style={styles.photoContainer}>
             <Image source={{ uri: photo.uri }} style={styles.galleryImage} />
-            <TouchableOpacity onPress={() => togglePhotoSelection(index)} style={styles.selectButton}>
-              <Ionicons name={selectedPhotos.includes(index) ? "checkmark-circle" : "checkmark-circle-outline"} size={35} color={selectedPhotos.includes(index) ? "green" : "gray"} />
+            <TouchableOpacity
+              onPress={() => handleTogglePhotoSelection(index)}
+              style={styles.selectButton}
+            >
+              <Ionicons
+                name={selectedPhotos.includes(index) ? 'checkmark-circle' : 'checkmark-circle-outline'}
+                size={35}
+                color={selectedPhotos.includes(index) ? 'green' : 'gray'}
+              />
             </TouchableOpacity>
           </View>
         );
@@ -145,20 +164,22 @@ const Combine = ({ navigation, route }) => {
       </ScrollView>
     );
   };
-  
 
-  const togglePhotoSelection = (index) => {
-    setSelectedPhotos(prevSelected => prevSelected.includes(index) ? prevSelected.filter(photoIndex => photoIndex !== index) : [...prevSelected, index]);
+  const fetchPhotos = async () => {
+    try {
+      const jsonValue = await AsyncStorage.getItem('user_photos');
+      const photos = jsonValue ? JSON.parse(jsonValue) : [];
+      const galleryPhotos = photos.map(photoUri => {
+        if (!photoUri || typeof photoUri !== 'string') {
+          return null;
+        }
+        return { uri: photoUri };
+      });
+      setGalleryPhotos(galleryPhotos);
+    } catch (error) {
+      console.error('Error fetching photos:', error);
+    }
   };
-
-  const handleCombine = () => {
-    const selectedPhotosData = selectedPhotos.map(index => galleryPhotos[index]);
-    setCombinedPhotos(selectedPhotosData);
-    setModalVisible(false);
-    setSelectedPhotos([]);
-  };
-  
-  
 
   return (
     <View style={styles.container}>
