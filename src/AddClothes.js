@@ -115,7 +115,7 @@ const AddClothes = ({ navigation }) => {
       </TouchableOpacity>
       {previewImage && (
         <View style={styles.imageContainer}>
-          <Image source={{ uri: previewImage }} style={styles.image} />
+          <Image source={{ uri: previewImage }} style={styles.image} resizeMode="contain" />
         </View>
       )}
     </View>
@@ -156,10 +156,12 @@ const styles = StyleSheet.create({
   imageContainer: {
     marginTop: 30,
     alignItems: 'center',
+    width: '100%', // Genişliği %100 yaparak ekrana daha iyi sığmasını sağlıyoruz
+    height: '50%', // Yüksekliği %50 yaparak ekrana daha iyi sığmasını sağlıyoruz
   },
   image: {
-    width: 400,
-    height: 650,
+    width: '100%', // Görüntü genişliği konteynırın genişliği ile aynı
+    height: '100%', // Görüntü yüksekliği konteynırın yüksekliği ile aynı
   },
 });
 
