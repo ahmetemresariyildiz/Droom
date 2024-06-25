@@ -1,67 +1,35 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PermissionsAndroid } from 'react-native';
 
 const AddClothes = ({ navigation }) => {
-  
   const [previewImage, setPreviewImage] = useState(null);
 
   const savePhotoToStorage = async (photoUri) => {
     try {
       let photos = [];
-  
       const storedPhotos = await AsyncStorage.getItem('user_photos');
-      console.log('Depolanan Fotoğraflar:', storedPhotos);
-  
       if (storedPhotos !== null) {
         photos = JSON.parse(storedPhotos);
-        console.log('Eski Fotoğraflar:', photos);
-      } else {
-        console.log('Kaydedilmiş fotoğraf bulunamadı.');
       }
-  
-      // Eğer photoUri bir dizi değilse, onu bir diziye dönüştür
+
       if (!Array.isArray(photoUri)) {
         photoUri = [photoUri];
       }
-  
-      // Yeni fotoğrafları dizinin sonuna ekleyin
-      photos = photos.concat(photoUri); // concat metodu kullanılıyor
-      console.log('Yeni Fotoğraflar:', photos);
-  
+
+      photos = photos.concat(photoUri);
+
       const jsonValue = JSON.stringify(photos);
-      console.log('Depolanacak JSON:', jsonValue);
-  
       await AsyncStorage.setItem('user_photos', jsonValue);
-      console.log('Fotoğraf başarıyla kaydedildi.');
     } catch (error) {
       console.error('Fotoğrafı kaydetme hatası:', error);
     }
   };
 
   const handleChoosePhotoFromCamera = async () => {
-    const requestStoragePermission = async () => {
-      try {
-        const granted = await PermissionsAndroid.requestMultiple([
-          PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
-          PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
-        ]);
-        if (
-          granted['android.permission.READ_EXTERNAL_STORAGE'] === PermissionsAndroid.RESULTS.GRANTED &&
-          granted['android.permission.WRITE_EXTERNAL_STORAGE'] === PermissionsAndroid.RESULTS.GRANTED
-        ) {
-          console.log('Yerel depo izinleri başarıyla alındı.');
-        } else {
-          console.log('Yerel depo izinleri reddedildi veya iptal edildi.');
-        }
-      } catch (error) {
-        console.error('Yerel depo izinlerini alma hatası:', error);
-      }
-    };
-    
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
       alert('Kamera izni reddedildi!');
@@ -74,10 +42,9 @@ const AddClothes = ({ navigation }) => {
       aspect: [4, 3],
       quality: 1,
     });
-      console.log (result.assets[0].uri)
+
     if (!result.cancelled) {
       setPreviewImage(result.assets[0].uri);
-      savePhotoToStorage(result.assets[0].uri); // Fotoğrafı async storage'a kaydet
     }
   };
 
@@ -97,7 +64,34 @@ const AddClothes = ({ navigation }) => {
 
     if (!result.cancelled) {
       setPreviewImage(result.assets[0].uri);
-      savePhotoToStorage(result.assets[0].uri); // Fotoğrafı async storage'a kaydet
+    }
+  };
+
+  const handleConfirmPhoto = async () => {
+    if (previewImage) {
+      savePhotoToStorage(previewImage);
+      Alert.alert('Başarılı', 'Fotoğraf kaydedildi.');
+      setPreviewImage(null);
+    }
+  };
+
+  const handleCancelPhoto = () => {
+    if (previewImage) {
+      Alert.alert(
+        'Onay',
+        'Bu fotoğrafı silmek istediğinize emin misiniz?',
+        [
+          {
+            text: 'Hayır',
+            style: 'cancel',
+          },
+          {
+            text: 'Evet',
+            onPress: () => setPreviewImage(null),
+          },
+        ],
+        { cancelable: false }
+      );
     }
   };
 
@@ -111,11 +105,19 @@ const AddClothes = ({ navigation }) => {
         <Text style={styles.buttonText}>Kamera ile Kıyafet Seç</Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.button} onPress={handleChoosePhotoFromGallery}>
-       <Text style={styles.buttonText}>Galeriden Kıyafet Seç</Text>
+        <Text style={styles.buttonText}>Galeriden Kıyafet Seç</Text>
       </TouchableOpacity>
       {previewImage && (
         <View style={styles.imageContainer}>
           <Image source={{ uri: previewImage }} style={styles.image} resizeMode="contain" />
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity style={styles.confirmButton} onPress={handleConfirmPhoto}>
+              <Text style={styles.buttonText}>Onayla</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.cancelButton} onPress={handleCancelPhoto}>
+              <Text style={styles.buttonText}>İptal</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       )}
     </View>
@@ -123,10 +125,10 @@ const AddClothes = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+  container: {
+    flex: 1,
     alignItems: 'center',
+    padding: 20,
   },
   button: {
     backgroundColor: 'dimgray',
@@ -139,8 +141,8 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginTop: 20, 
-    color: 'black', 
+    marginTop: 20,
+    color: 'black',
   },
   backButton: {
     position: 'absolute',
@@ -156,12 +158,30 @@ const styles = StyleSheet.create({
   imageContainer: {
     marginTop: 30,
     alignItems: 'center',
-    width: '100%', // Genişliği %100 yaparak ekrana daha iyi sığmasını sağlıyoruz
-    height: '50%', // Yüksekliği %50 yaparak ekrana daha iyi sığmasını sağlıyoruz
+    width: '100%',
+    height: '50%',
   },
   image: {
-    width: '100%', // Görüntü genişliği konteynırın genişliği ile aynı
-    height: '100%', // Görüntü yüksekliği konteynırın yüksekliği ile aynı
+    width: '100%',
+    height: '100%',
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+    marginTop: 20,
+  },
+  confirmButton: {
+    backgroundColor: 'green',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+  },
+  cancelButton: {
+    backgroundColor: 'red',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
   },
 });
 
