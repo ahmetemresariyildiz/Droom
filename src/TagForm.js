@@ -1,136 +1,118 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Button, Platform, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { View, Button, StyleSheet, ScrollView, Text, Modal, TouchableOpacity } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 
-const TagForm = ({ onSave, onFilter, initialTags = {} }) => {
-  const [color, setColor] = useState('');
-  const [category, setCategory] = useState('');
-  const [season, setSeason] = useState('');
-  const [dressCode, setDressCode] = useState('');
-  const [brand, setBrand] = useState('');
+const colors = ['Mavi', 'Yeşil', 'Kırmızı', 'Siyah', 'Beyaz', 'Sarı', 'Turuncu', 'Pembe', 'Mor', 'Kahverengi', 'Gri'];
+const categories = ['Üst', 'Alt', 'Ayakkabı', 'Aksesuar'];
+const seasons = ['Yaz', 'Kış', 'İlkbahar', 'Sonbahar'];
+const dressCodes = ['Günlük', 'İş', 'Özel Gün', 'Spor'];
+const brands = ['Boyner', 'Mavi', 'Koton', 'Nautica', 'LC Waikiki'];
 
-  useEffect(() => {
-    setColor(initialTags.color || '');
-    setCategory(initialTags.category || '');
-    setSeason(initialTags.season || '');
-    setDressCode(initialTags.dressCode || '');
-    setBrand(initialTags.brand || '');
-  }, [initialTags]);
+const TagForm = ({ onSave, onFilter, initialTags }) => {
+  const [color, setColor] = useState(initialTags.color || '');
+  const [category, setCategory] = useState(initialTags.category || '');
+  const [season, setSeason] = useState(initialTags.season || '');
+  const [dressCode, setDressCode] = useState(initialTags.dressCode || '');
+  const [brand, setBrand] = useState(initialTags.brand || '');
+  const [modalVisible, setModalVisible] = useState(false);
 
   const handleSave = () => {
-    const newTags = { color, category, season, dressCode, brand };
-    onSave(newTags);
-    // Reset form after saving
-    setColor('');
-    setCategory('');
-    setSeason('');
-    setDressCode('');
-    setBrand('');
-  };
-
-  const handleResetTags = () => {
-    setColor('');
-    setCategory('');
-    setSeason('');
-    setDressCode('');
-    setBrand('');
+    onSave({ color, category, season, dressCode, brand });
+    setModalVisible(false);
   };
 
   const handleFilter = () => {
-    const filterTags = { color, category, season, dressCode, brand };
-    onFilter(filterTags);
+    onFilter({ color, category, season, dressCode, brand });
+    setModalVisible(false);
+  };
+
+  const resetFilters = () => {
+    setColor('');
+    setCategory('');
+    setSeason('');
+    setDressCode('');
+    setBrand('');
   };
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.formContainer}>
-          <Text style={styles.label}>Renk</Text>
-          <Picker
-            selectedValue={color}
-            onValueChange={(itemValue) => setColor(itemValue)}
-            style={styles.picker}
-            prompt="Renk Seçiniz"
-          >
-            <Picker.Item label="Seç" value="" />
-            <Picker.Item label="Kırmızı" value="Kırmızı" />
-            <Picker.Item label="Mavi" value="Mavi" />
-            <Picker.Item label="Yeşil" value="Yeşil" />
-            <Picker.Item label="Beyaz" value="Beyaz" />
-            <Picker.Item label="Siyah" value="Siyah" />
-          </Picker>
-
-          <Text style={styles.label}>Kategori</Text>
-          <Picker
-            selectedValue={category}
-            onValueChange={(itemValue) => setCategory(itemValue)}
-            style={styles.picker}
-            prompt="Kategori Seçiniz"
-          >
-            <Picker.Item label="Seç" value="" />
-            <Picker.Item label="Üst Giyim" value="Üst Giyim" />
-            <Picker.Item label="Alt Giyim" value="Alt Giyim" />
-            <Picker.Item label="Ayakkabı" value="Ayakkabı" />
-          </Picker>
-
-          <Text style={styles.label}>Mevsim</Text>
-          <Picker
-            selectedValue={season}
-            onValueChange={(itemValue) => setSeason(itemValue)}
-            style={styles.picker}
-            prompt="Mevsim Seçiniz"
-          >
-            <Picker.Item label="Seç" value="" />
-            <Picker.Item label="İlkbahar" value="İlkbahar" />
-            <Picker.Item label="Yaz" value="Yaz" />
-            <Picker.Item label="Sonbahar" value="Sonbahar" />
-            <Picker.Item label="Kış" value="Kış" />
-          </Picker>
-
-          <Text style={styles.label}>Dress Code</Text>
-          <Picker
-            selectedValue={dressCode}
-            onValueChange={(itemValue) => setDressCode(itemValue)}
-            style={styles.picker}
-            prompt="Dress Code Seçiniz"
-          >
-            <Picker.Item label="Seç" value="" />
-            <Picker.Item label="İş" value="İş" />
-            <Picker.Item label="Spor" value="Spor" />
-            <Picker.Item label="Gece Dışarı Çıkma" value="Gece Dışarı Çıkma" />
-          </Picker>
-
-          <Text style={styles.label}>Marka</Text>
-          <Picker
-            selectedValue={brand}
-            onValueChange={(itemValue) => setBrand(itemValue)}
-            style={styles.picker}
-            prompt="Marka Seçiniz"
-          >
-            <Picker.Item label="Seç" value="" />
-            <Picker.Item label="Mavi" value="Mavi" />
-            <Picker.Item label="Koton" value="Koton" />
-            <Picker.Item label="Boyner" value="Boyner" />
-            <Picker.Item label="Zara" value="Zara" />
-            <Picker.Item label="LC Waikiki" value="LC Waikiki" />
-          </Picker>
-
-          <View style={styles.buttonContainer}>
-            <Button title="Kaydet" onPress={handleSave} color="#1E90FF" />
-          </View>
-          <View style={styles.buttonContainer}>
-            <Button
-              title="Etiketleri Sıfırla"
-              onPress={handleResetTags}
-              color="#FF6347"
-              disabled={!color && !category && !season && !dressCode && !brand}
-            />
-          </View>
-          <View style={styles.buttonContainer}>
-            <Button title="Filtrele" onPress={handleFilter} color="#1E90FF" />
+      <Button title="Etiketle" onPress={() => setModalVisible(true)} />
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.centeredView}>
+          <View style={styles.modalView}>
+            <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
+              <Text style={styles.closeButtonText}>X</Text>
+            </TouchableOpacity>
+            <ScrollView style={styles.scrollView}>
+              <Text style={styles.label}>Renk:</Text>
+              <Picker
+                selectedValue={color}
+                onValueChange={(itemValue) => setColor(itemValue)}
+                style={styles.picker}
+              >
+                <Picker.Item label="Seç" value="" />
+                {colors.sort().map((color, index) => (
+                  <Picker.Item key={index} label={color} value={color} />
+                ))}
+              </Picker>
+              <Text style={styles.label}>Kategori:</Text>
+              <Picker
+                selectedValue={category}
+                onValueChange={(itemValue) => setCategory(itemValue)}
+                style={styles.picker}
+              >
+                <Picker.Item label="Seç" value="" />
+                {categories.map((category, index) => (
+                  <Picker.Item key={index} label={category} value={category} />
+                ))}
+              </Picker>
+              <Text style={styles.label}>Sezon:</Text>
+              <Picker
+                selectedValue={season}
+                onValueChange={(itemValue) => setSeason(itemValue)}
+                style={styles.picker}
+              >
+                <Picker.Item label="Seç" value="" />
+                {seasons.map((season, index) => (
+                  <Picker.Item key={index} label={season} value={season} />
+                ))}
+              </Picker>
+              <Text style={styles.label}>Giyim Kodu:</Text>
+              <Picker
+                selectedValue={dressCode}
+                onValueChange={(itemValue) => setDressCode(itemValue)}
+                style={styles.picker}
+              >
+                <Picker.Item label="Seç" value="" />
+                {dressCodes.map((dressCode, index) => (
+                  <Picker.Item key={index} label={dressCode} value={dressCode} />
+                ))}
+              </Picker>
+              <Text style={styles.label}>Marka:</Text>
+              <Picker
+                selectedValue={brand}
+                onValueChange={(itemValue) => setBrand(itemValue)}
+                style={styles.picker}
+              >
+                <Picker.Item label="Seç" value="" />
+                {brands.map((brand, index) => (
+                  <Picker.Item key={index} label={brand} value={brand} />
+                ))}
+              </Picker>
+            </ScrollView>
+            <View style={styles.buttonRow}>
+              <Button title="Filtreleri Sıfırla" onPress={resetFilters} />
+              <Button title="Kaydet" onPress={handleSave} />
+              <Button title="Filtrele" onPress={handleFilter} />
+            </View>
           </View>
         </View>
-      </ScrollView>
+      </Modal>
     </View>
   );
 };
@@ -140,35 +122,67 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
-  scrollContainer: {
-    width: '100%',
+  centeredView: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 22,
+  },
+  modalView: {
+    width: '80%',
+    height: '80%',
+    margin: 20,
     backgroundColor: 'white',
-    borderRadius: 10,
-    padding: 20,
+    borderRadius: 20,
+    padding: 35,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
   },
-  formContainer: {
-    paddingBottom: 20,
+  closeButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    backgroundColor: 'red',
+    borderRadius: 15,
+    width: 30,
+    height: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closeButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 18,
+  },
+  scrollView: {
+    width: '100%',
   },
   label: {
     fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 8,
+    marginVertical: 10,
     color: 'black',
   },
   picker: {
+    width: '100%',
     borderWidth: 1,
-    borderColor: 'grey',
-    borderRadius: 5,
-    padding: Platform.OS === 'ios' ? 15 : 12,
+    borderColor: '#ccc',
     marginBottom: 10,
     color: 'black',
   },
-  buttonContainer: {
+  buttonRow: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: 20,
+    justifyContent: 'center',
+    width: '100%',
+    marginTop: 10,
   },
 });
 

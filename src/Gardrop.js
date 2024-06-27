@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Image, TouchableOpacity, StyleSheet, Text, FlatList, Modal, Alert, ScrollView } from 'react-native';
+import { View, Image, TouchableOpacity, StyleSheet, Text, FlatList, Modal, Alert, ScrollView, Dimensions } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import TagForm from './TagForm';
@@ -46,7 +46,7 @@ const Gardrop = ({ navigation }) => {
         console.error('Fotoğrafları alma hatası:', error);
       }
     };
-    
+
     loadPhotos();
   }, []);
 
@@ -110,7 +110,7 @@ const Gardrop = ({ navigation }) => {
 
   const handleCombine = () => {
     const validSelectedPhotos = selectedPhotos.filter(photo => photos.includes(photo));
-  
+
     if (validSelectedPhotos.length === selectedPhotos.length) {
       navigation.navigate('Combine', { selectedPhotos });
     } else {
@@ -118,8 +118,6 @@ const Gardrop = ({ navigation }) => {
       // veya başka bir hata işleme mekanizması ekleyin
     }
   };
-  
-  
 
   const closeModal = () => {
     setModalVisible(false);
@@ -131,8 +129,11 @@ const Gardrop = ({ navigation }) => {
   };
 
   const handleSaveTags = async (newTags) => {
-    const photoUri = photos[selectedPhotoIndex];
-    const updatedTags = { ...tags, [photoUri]: newTags };
+    const photoUris = selectedPhotos.length > 0 ? selectedPhotos : [photos[selectedPhotoIndex]];
+    const updatedTags = { ...tags };
+    photoUris.forEach(photoUri => {
+      updatedTags[photoUri] = newTags;
+    });
     setTags(updatedTags);
     setTagModalVisible(false);
     await AsyncStorage.setItem('photo_tags', JSON.stringify(updatedTags));
@@ -153,6 +154,19 @@ const Gardrop = ({ navigation }) => {
     setTagModalVisible(false); // Filtre uygulandıktan sonra pop-up'ı kapat
   };
 
+  const renderPhotoItem = ({ item, index }) => (
+    <TouchableOpacity onPress={() => handlePhotoPress(item, index)}>
+      <Image
+        source={{ uri: item }}
+        style={[styles.image, { borderColor: selectedPhotos.includes(item) ? 'black' : 'transparent' }]}
+      />
+    </TouchableOpacity>
+  );
+
+  const numColumns = 4;
+  const windowWidth = Dimensions.get('window').width;
+  const imageSize = windowWidth / numColumns - 10;
+
   return (
     <View style={styles.container}>
       <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
@@ -161,17 +175,10 @@ const Gardrop = ({ navigation }) => {
       <Text style={styles.title}>Gardrop</Text>
       <FlatList
         data={filteredPhotos}
-        numColumns={2}
+        numColumns={numColumns}
         keyExtractor={(item, index) => index.toString()}
         contentContainerStyle={{ padding: 5 }}
-        renderItem={({ item, index }) => (
-          <TouchableOpacity onPress={() => handlePhotoPress(item, index)}>
-            <Image
-              source={{ uri: item }}
-              style={[styles.image, { borderColor: selectedPhotos.includes(item) ? 'black' : 'transparent' }]}
-            />
-          </TouchableOpacity>
-        )}
+        renderItem={renderPhotoItem}
       />
       <Modal
         animationType="slide"
@@ -200,10 +207,10 @@ const Gardrop = ({ navigation }) => {
         <View style={styles.tagModalContainer}>
           <ScrollView contentContainerStyle={styles.tagModalContent}>
             <Text style={styles.tagTitle}>Etiketler</Text>
-            <TagForm 
-              onSave={handleSaveTags} 
-              onFilter={handleFilter} 
-              initialTags={tags[photos[selectedPhotoIndex]] || {}} // Seçilen fotoğrafın etiketlerini geç
+            <TagForm
+              onSave={handleSaveTags}
+              onFilter={handleFilter}
+              initialTags={tags[selectedPhotos[0]] || tags[photos[selectedPhotoIndex]] || {}} // Seçilen fotoğrafların etiketlerini geç
             />
           </ScrollView>
         </View>
@@ -233,110 +240,112 @@ const Gardrop = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  backButton: {
-    position: 'absolute',
-    top: 25,
-    left: 20,
-    zIndex: 1,
+    paddingTop: 20,
+    backgroundColor: '#fff',
   },
   title: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginTop: 20, 
-    color: 'black', 
+    marginBottom: 10,
   },
   image: {
-    width: 140,
-    height: 140,
+    width: Dimensions.get('window').width / 4 - 10,
+    height: Dimensions.get('window').width / 4 - 10,
     margin: 5,
     borderWidth: 2,
-  },
-  modalImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'contain',
   },
   modalContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+  },
+  modalImage: {
+    width: '90%',
+    height: '70%',
+    resizeMode: 'contain',
+  },
+  modalBottomButtons: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  modalBottomButton: {
+    backgroundColor: '#2196F3',
+    padding: 10,
+    borderRadius: 10,
+    margin: 5,
+  },
+  modalBottomButtonText: {
+    color: '#fff',
+    fontSize: 18,
   },
   actionButton: {
     position: 'absolute',
     bottom: 20,
+    left: 20,
+    right: 20,
+    padding: 15,
     borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    marginHorizontal: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 5,
   },
   deleteButton: {
-    position: 'absolute',
-    backgroundColor: 'darkred',
-    left: 90,
+    backgroundColor: 'red',
   },
   combineButton: {
-    backgroundColor: 'black',
-    right: 90,
+    backgroundColor: 'green',
   },
   actionButtonText: {
-    color: 'white',
-    fontSize: 16,
+    color: '#fff',
+    fontSize: 18,
   },
   tagModalContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
   },
   tagModalContent: {
-    backgroundColor: 'white',
+    backgroundColor: '#fff',
     padding: 20,
     borderRadius: 10,
+    width: '80%',
   },
   tagTitle: {
-    fontSize: 18,
+    fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 10,
+    textAlign: 'center',
+  },
+  backButton: {
+    position: 'absolute',
+    top: 20,
+    left: 10,
+    zIndex: 1,
   },
   bottomButton: {
     position: 'absolute',
     bottom: 20,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
+    left: 20,
+    padding: 15,
     borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 5,
   },
   markButton: {
-    left: 10,
-    backgroundColor: 'black',
+    backgroundColor: '#FFA500',
   },
   filterButton: {
-    right: 10,
-    backgroundColor: 'black',
+    backgroundColor: '#FF1493',
+    bottom: 80,
   },
   bottomButtonText: {
-    color: 'white',
-    fontSize: 16,
-  },
-  modalBottomButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    position: 'absolute',
-    bottom: 750,
-    width: '100%',
-    paddingHorizontal: 20,
-  },
-  modalBottomButton: {
-    backgroundColor: 'black',
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-  },
-  modalBottomButtonText: {
-    color: 'white',
-    fontSize: 16,
+    color: '#fff',
+    fontSize: 18,
   },
 });
 
