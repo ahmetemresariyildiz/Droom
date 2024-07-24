@@ -206,7 +206,7 @@ const Gardrop = ({ navigation }) => {
       >
         <View style={styles.tagModalContainer}>
           <ScrollView contentContainerStyle={styles.tagModalContent}>
-            <Text style={styles.tagTitle}>Etiketler</Text>
+            
             <TagForm
               onSave={handleSaveTags}
               onFilter={handleFilter}

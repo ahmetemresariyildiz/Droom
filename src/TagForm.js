@@ -14,7 +14,7 @@ const TagForm = ({ onSave, onFilter, initialTags }) => {
   const [season, setSeason] = useState(initialTags.season || '');
   const [dressCode, setDressCode] = useState(initialTags.dressCode || '');
   const [brand, setBrand] = useState(initialTags.brand || '');
-  const [modalVisible, setModalVisible] = useState(false);
+  const [modalVisible, setModalVisible] = useState(true);
 
   const handleSave = () => {
     onSave({ color, category, season, dressCode, brand });
@@ -36,16 +36,9 @@ const TagForm = ({ onSave, onFilter, initialTags }) => {
 
   return (
     <View style={styles.container}>
-      <Button title="Etiketle" onPress={() => setModalVisible(true)} />
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
         <View style={styles.centeredView}>
           <View style={styles.modalView}>
-            <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
+            <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(true)}>
               <Text style={styles.closeButtonText}>X</Text>
             </TouchableOpacity>
             <ScrollView style={styles.scrollView}>
@@ -112,7 +105,6 @@ const TagForm = ({ onSave, onFilter, initialTags }) => {
             </View>
           </View>
         </View>
-      </Modal>
     </View>
   );
 };
