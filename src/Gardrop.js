@@ -24,7 +24,7 @@ const Gardrop = ({ navigation }) => {
     brand: '',
   });
   const [filteredPhotos, setFilteredPhotos] = useState([]);
-  const [showButtons, setShowButtons] = useState(true); // Yeni durum ekledik
+  const [showButtons, setShowButtons] = useState(true);
 
   useEffect(() => {
     const loadPhotos = async () => {
@@ -54,10 +54,7 @@ const Gardrop = ({ navigation }) => {
   }, []);
 
   useEffect(() => {
-    if (selectedPhotos.length === 1) {
-      setIsDeleteActive(true);
-      setIsCombineActive(false);
-    } else if (selectedPhotos.length > 1) {
+    if (selectedPhotos.length > 0) {
       setIsDeleteActive(true);
       setIsCombineActive(true);
     } else {
@@ -76,13 +73,13 @@ const Gardrop = ({ navigation }) => {
     } else {
       setSelectedPhotoIndex(index);
       setModalVisible(true);
-      setShowButtons(false); // Butonları gizle
+      setShowButtons(false);
     }
   };
 
   const handleMark = () => {
     setIsMarking(!isMarking);
-    if (isMarking) {
+    if (!isMarking) {
       setSelectedPhotos([]);
     }
   };
@@ -99,9 +96,15 @@ const Gardrop = ({ navigation }) => {
         {
           text: 'Evet',
           onPress: () => {
+            // Seçilen fotoğrafları sil
             const updatedPhotos = photos.filter((photo) => !selectedPhotos.includes(photo));
+            
+            // State güncelle
             setPhotos(updatedPhotos);
+            setFilteredPhotos(updatedPhotos);
             setSelectedPhotos([]);
+  
+            // AsyncStorage güncelle
             AsyncStorage.setItem('user_photos', JSON.stringify(updatedPhotos))
               .then(() => console.log('Fotoğraf başarıyla silindi.'))
               .catch((error) => console.error('Fotoğraf silinirken bir hata oluştu:', error));
@@ -111,6 +114,7 @@ const Gardrop = ({ navigation }) => {
       { cancelable: true }
     );
   };
+  
 
   const handleCombine = () => {
     const validSelectedPhotos = selectedPhotos.filter(photo => photos.includes(photo));
@@ -119,14 +123,13 @@ const Gardrop = ({ navigation }) => {
       navigation.navigate('Combine', { selectedPhotos });
     } else {
       console.error('ERROR: Invalid URIs for photos:', selectedPhotos.filter(photo => !photos.includes(photo)));
-      // veya başka bir hata işleme mekanizması ekleyin
     }
   };
 
   const closeModal = () => {
     setModalVisible(false);
     setSelectedPhotoIndex(null);
-    setShowButtons(true); // Butonları geri getir
+    setShowButtons(true);
   };
 
   const handleTagPhoto = () => {
@@ -179,7 +182,6 @@ const Gardrop = ({ navigation }) => {
       </TouchableOpacity>
       <Text style={styles.title}>Gardrop</Text>
 
-      {/* Modal Açıkken Arka Planı Flulaştıran View */}
       {modalVisible && <View style={styles.overlay} />}
 
       <FlatList
@@ -241,32 +243,43 @@ const Gardrop = ({ navigation }) => {
         </View>
       </Modal>
 
-      {/* Butonları göster/gizle */}
-      {showButtons && (
-        <View style={styles.bottomButtonsContainer}>
-          <TouchableOpacity style={[styles.bottomButton, styles.markButton]} onPress={handleMark}>
-            <Text style={styles.bottomButtonText}>{isMarking ? 'İptal' : 'İşaretle'}</Text>
+      {isMarking && (
+        <View style={styles.actionButtonsContainer}>
+          <TouchableOpacity
+            style={[styles.actionButton, styles.deleteButton]}
+            onPress={handleDelete}
+          >
+            <Ionicons name="trash" size={24} color="white" />
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.bottomButton, styles.filterButton]} onPress={() => setFilterModalVisible(true)}>
-            <Text style={styles.bottomButtonText}>Filtrele</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.bottomButton, styles.tagButton]} onPress={handleTagPhoto}>
-            <Text style={styles.bottomButtonText}>Etiketle</Text>
+          <TouchableOpacity
+            style={[styles.actionButton, styles.combineButton]}
+            onPress={handleCombine}
+          >
+            <Text style={styles.combineText}>D</Text>
           </TouchableOpacity>
         </View>
       )}
 
-      {isDeleteActive && (
-        <TouchableOpacity style={[styles.actionButton, styles.deleteButton]} onPress={handleDelete}>
-          <Text style={styles.actionButtonText}>Sil</Text>
+      <View style={styles.bottomButtonsContainer}>
+        <TouchableOpacity
+          style={[styles.bottomButton, styles.markButton]}
+          onPress={handleMark}
+        >
+          <Text style={styles.bottomButtonText}>{isMarking ? 'İptal' : 'İşaretle'}</Text>
         </TouchableOpacity>
-      )}
-
-      {isCombineActive && (
-        <TouchableOpacity style={[styles.actionButton, styles.combineButton]} onPress={handleCombine}>
-          <Text style={styles.actionButtonText}>Birleştir</Text>
+        <TouchableOpacity
+          style={[styles.bottomButton, styles.filterButton]}
+          onPress={() => setFilterModalVisible(true)}
+        >
+          <Text style={styles.bottomButtonText}>Filtrele</Text>
         </TouchableOpacity>
-      )}
+        <TouchableOpacity
+          style={[styles.bottomButton, styles.tagButton]}
+          onPress={() => setTagModalVisible(true)}
+        >
+          <Text style={styles.bottomButtonText}>Etiketle</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
@@ -315,13 +328,16 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 18,
   },
-  actionButton: {
+  actionButtonsContainer: {
     position: 'absolute',
-    bottom: 20,
-    left: 20,
+    top: 20,
     right: 20,
-    padding: 15,
-    borderRadius: 10,
+    flexDirection: 'row',
+  },
+  actionButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     justifyContent: 'center',
     alignItems: 'center',
     marginHorizontal: 5,
@@ -330,11 +346,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'red',
   },
   combineButton: {
-    backgroundColor: 'green',
+    backgroundColor: '#2196F3',
   },
-  actionButtonText: {
-    color: '#fff',
-    fontSize: 18,
+  combineText: {
+    color: 'white',
+    fontSize: 32,
+    fontWeight: 'bold',
   },
   tagModalContainer: {
     flex: 1,
@@ -391,7 +408,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Flulaştırma efekti
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
 });
 
