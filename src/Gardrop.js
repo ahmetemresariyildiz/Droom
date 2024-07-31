@@ -14,6 +14,7 @@ const Gardrop = ({ navigation }) => {
   const [isDeleteActive, setIsDeleteActive] = useState(false);
   const [isCombineActive, setIsCombineActive] = useState(false);
   const [tagModalVisible, setTagModalVisible] = useState(false);
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [tags, setTags] = useState({});
   const [filters, setFilters] = useState({
     color: '',
@@ -23,6 +24,7 @@ const Gardrop = ({ navigation }) => {
     brand: '',
   });
   const [filteredPhotos, setFilteredPhotos] = useState([]);
+  const [showButtons, setShowButtons] = useState(true); // Yeni durum ekledik
 
   useEffect(() => {
     const loadPhotos = async () => {
@@ -32,7 +34,7 @@ const Gardrop = ({ navigation }) => {
         if (storedPhotos !== null) {
           const parsedPhotos = JSON.parse(storedPhotos);
           setPhotos(parsedPhotos);
-          setFilteredPhotos(parsedPhotos); // Filtrelenmemiş fotoğrafları ilk başta göster
+          setFilteredPhotos(parsedPhotos);
         } else {
           setPhotos([]);
           setFilteredPhotos([]);
@@ -74,6 +76,7 @@ const Gardrop = ({ navigation }) => {
     } else {
       setSelectedPhotoIndex(index);
       setModalVisible(true);
+      setShowButtons(false); // Butonları gizle
     }
   };
 
@@ -123,6 +126,7 @@ const Gardrop = ({ navigation }) => {
   const closeModal = () => {
     setModalVisible(false);
     setSelectedPhotoIndex(null);
+    setShowButtons(true); // Butonları geri getir
   };
 
   const handleTagPhoto = () => {
@@ -138,7 +142,7 @@ const Gardrop = ({ navigation }) => {
     setTags(updatedTags);
     setTagModalVisible(false);
     await AsyncStorage.setItem('photo_tags', JSON.stringify(updatedTags));
-    handleFilter(filters); // Filtreyi yeniden uygula
+    handleFilter(filters);
   };
 
   const handleFilter = (newFilters) => {
@@ -151,8 +155,8 @@ const Gardrop = ({ navigation }) => {
         return photoTags[key] === newFilters[key];
       });
     });
-    setFilteredPhotos(filtered.length > 0 ? filtered : photos); // Filtre sonucu boş ise tüm fotoğrafları göster
-    setTagModalVisible(false); // Filtre uygulandıktan sonra pop-up'ı kapat
+    setFilteredPhotos(filtered.length > 0 ? filtered : photos);
+    setFilterModalVisible(false);
   };
 
   const renderPhotoItem = ({ item, index }) => (
@@ -174,6 +178,10 @@ const Gardrop = ({ navigation }) => {
         <Ionicons name="arrow-back" size={24} color="black" />
       </TouchableOpacity>
       <Text style={styles.title}>Gardrop</Text>
+
+      {/* Modal Açıkken Arka Planı Flulaştıran View */}
+      {modalVisible && <View style={styles.overlay} />}
+
       <FlatList
         data={filteredPhotos}
         numColumns={numColumns}
@@ -182,21 +190,21 @@ const Gardrop = ({ navigation }) => {
         renderItem={renderPhotoItem}
       />
 
-    <Filter
-      visible={tagModalVisible}
-      onClose={() => setTagModalVisible(false)}
-      onFilter={handleFilter}
-      onReset={() => {
-        setFilters({
-          color: '',
-          category: '',
-          season: '',
-          dressCode: '',
-          brand: '',
-        });
-        setFilteredPhotos(photos); // Tüm fotoğrafları göster
-      }}
-    />
+      <Filter
+        visible={filterModalVisible}
+        onClose={() => setFilterModalVisible(false)}
+        onFilter={handleFilter}
+        onReset={() => {
+          setFilters({
+            color: '',
+            category: '',
+            season: '',
+            dressCode: '',
+            brand: '',
+          });
+          setFilteredPhotos(photos);
+        }}
+      />
 
       <Modal
         animationType="slide"
@@ -205,7 +213,7 @@ const Gardrop = ({ navigation }) => {
         onRequestClose={closeModal}
       >
         <View style={styles.modalContainer}>
-          <Image source={{ uri: photos[selectedPhotoIndex] }} style={styles.modalImage} />
+          <Image source={{ uri: filteredPhotos[selectedPhotoIndex] }} style={styles.modalImage} />
         </View>
         <View style={styles.modalBottomButtons}>
           <TouchableOpacity style={styles.modalBottomButton} onPress={handleTagPhoto}>
@@ -216,6 +224,7 @@ const Gardrop = ({ navigation }) => {
           </TouchableOpacity>
         </View>
       </Modal>
+
       <Modal
         animationType="slide"
         transparent={true}
@@ -224,33 +233,40 @@ const Gardrop = ({ navigation }) => {
       >
         <View style={styles.tagModalContainer}>
           <ScrollView contentContainerStyle={styles.tagModalContent}>
-            
             <TagForm
               onSave={handleSaveTags}
-              onFilter={handleFilter}
-              initialTags={tags[selectedPhotos[0]] || tags[photos[selectedPhotoIndex]] || {}} // Seçilen fotoğrafların etiketlerini geç
+              initialTags={tags[selectedPhotos[0]] || tags[photos[selectedPhotoIndex]] || {}}
             />
           </ScrollView>
         </View>
       </Modal>
+
+      {/* Butonları göster/gizle */}
+      {showButtons && (
+        <View style={styles.bottomButtonsContainer}>
+          <TouchableOpacity style={[styles.bottomButton, styles.markButton]} onPress={handleMark}>
+            <Text style={styles.bottomButtonText}>{isMarking ? 'İptal' : 'İşaretle'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.bottomButton, styles.filterButton]} onPress={() => setFilterModalVisible(true)}>
+            <Text style={styles.bottomButtonText}>Filtrele</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.bottomButton, styles.tagButton]} onPress={handleTagPhoto}>
+            <Text style={styles.bottomButtonText}>Etiketle</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {isDeleteActive && (
         <TouchableOpacity style={[styles.actionButton, styles.deleteButton]} onPress={handleDelete}>
           <Text style={styles.actionButtonText}>Sil</Text>
         </TouchableOpacity>
       )}
+
       {isCombineActive && (
         <TouchableOpacity style={[styles.actionButton, styles.combineButton]} onPress={handleCombine}>
-          <Text style={styles.actionButtonText}>Kombin Yap</Text>
+          <Text style={styles.actionButtonText}>Birleştir</Text>
         </TouchableOpacity>
       )}
-      {/* İşaretle butonu */}
-      <TouchableOpacity style={[styles.bottomButton, styles.markButton]} onPress={handleMark}>
-        <Text style={styles.bottomButtonText}>{isMarking ? 'İptal' : 'İşaretle'}</Text>
-      </TouchableOpacity>
-      {/* Filtrele butonu */}
-      <TouchableOpacity style={[styles.bottomButton, styles.filterButton]} onPress={() => setTagModalVisible(true)}>
-        <Text style={styles.bottomButtonText}>Filtrele</Text>
-      </TouchableOpacity>
     </View>
   );
 };
@@ -344,26 +360,38 @@ const styles = StyleSheet.create({
     left: 10,
     zIndex: 1,
   },
-  bottomButton: {
+  bottomButtonsContainer: {
+    flexDirection: 'row',
     position: 'absolute',
     bottom: 20,
-    left: 20,
+    left: 0,
+    right: 0,
+    justifyContent: 'space-around',
+  },
+  bottomButton: {
     padding: 15,
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
     marginHorizontal: 5,
+    width: '30%',
   },
   markButton: {
     backgroundColor: '#FFA500',
   },
   filterButton: {
     backgroundColor: '#FF1493',
-    bottom: 80,
+  },
+  tagButton: {
+    backgroundColor: '#4CAF50',
   },
   bottomButtonText: {
     color: '#fff',
     fontSize: 18,
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Flulaştırma efekti
   },
 });
 

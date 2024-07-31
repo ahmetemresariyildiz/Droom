@@ -125,7 +125,9 @@ const TagForm = ({ onSave, initialTags, photoId }) => {
     setSeason('');
     setDressCode('');
     setBrand('');
+    onSave({ color: '', category: '', season: '', dressCode: '', brand: '' }); // initialTags'i de sıfırlayın
   };
+  
 
   return (
     <View style={styles.container}>
