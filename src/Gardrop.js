@@ -3,6 +3,7 @@ import { View, Image, TouchableOpacity, StyleSheet, Text, FlatList, Modal, Alert
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import TagForm from './TagForm';
+import Filter from './Filter';
 
 const Gardrop = ({ navigation }) => {
   const [photos, setPhotos] = useState([]);
@@ -180,6 +181,23 @@ const Gardrop = ({ navigation }) => {
         contentContainerStyle={{ padding: 5 }}
         renderItem={renderPhotoItem}
       />
+
+    <Filter
+      visible={tagModalVisible}
+      onClose={() => setTagModalVisible(false)}
+      onFilter={handleFilter}
+      onReset={() => {
+        setFilters({
+          color: '',
+          category: '',
+          season: '',
+          dressCode: '',
+          brand: '',
+        });
+        setFilteredPhotos(photos); // Tüm fotoğrafları göster
+      }}
+    />
+
       <Modal
         animationType="slide"
         transparent={true}

@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
-import { View, Button, StyleSheet, ScrollView, Text, TouchableOpacity, TextInput, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Button, StyleSheet, ScrollView, Text, TextInput, Alert } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const initialColors = ['Mavi', 'Yeşil', 'Kırmızı', 'Siyah', 'Beyaz', 'Sarı', 'Turuncu', 'Pembe', 'Mor', 'Kahverengi', 'Gri'];
-const initialCategories = ['Üst', 'Alt', 'Ayakkabı', 'Aksesuar'];
-const initialSeasons = ['Yaz', 'Kış', 'İlkbahar', 'Sonbahar'];
-const initialDressCodes = ['Günlük', 'İş', 'Özel Gün', 'Spor'];
-const initialBrands = ['Boyner', 'Mavi', 'Koton', 'Nautica', 'LC Waikiki'];
+const initialColors = ['Kırmızı', 'Mavi', 'Yeşil'];
+const initialCategories = ['Günlük', 'Resmi'];
+const initialSeasons = ['Yaz', 'Kış'];
+const initialDressCodes = ['Spor', 'Klasik'];
+const initialBrands = ['Nike', 'Adidas'];
 
-const TagForm = ({ onSave, initialTags }) => {
+const TagForm = ({ onSave, initialTags, photoId }) => {
   const [color, setColor] = useState(initialTags.color || '');
   const [category, setCategory] = useState(initialTags.category || '');
   const [season, setSeason] = useState(initialTags.season || '');
@@ -23,28 +24,75 @@ const TagForm = ({ onSave, initialTags }) => {
   const [dressCodes, setDressCodes] = useState(initialDressCodes);
   const [brands, setBrands] = useState(initialBrands);
 
-  const addNewTag = () => {
+  useEffect(() => {
+    loadTags();
+  }, []); // Boş bağımlılık dizisi ile sadece bileşen ilk kez yüklendiğinde çalışır.
+
+  const loadTags = async () => {
+    try {
+      const loadedColors = await AsyncStorage.getItem('colors');
+      const loadedCategories = await AsyncStorage.getItem('categories');
+      const loadedSeasons = await AsyncStorage.getItem('seasons');
+      const loadedDressCodes = await AsyncStorage.getItem('dressCodes');
+      const loadedBrands = await AsyncStorage.getItem('brands');
+
+      console.log('Loaded colors:', loadedColors);
+      console.log('Loaded categories:', loadedCategories);
+      console.log('Loaded seasons:', loadedSeasons);
+      console.log('Loaded dress codes:', loadedDressCodes);
+      console.log('Loaded brands:', loadedBrands);
+
+      setColors(loadedColors ? JSON.parse(loadedColors) : initialColors);
+      setCategories(loadedCategories ? JSON.parse(loadedCategories) : initialCategories);
+      setSeasons(loadedSeasons ? JSON.parse(loadedSeasons) : initialSeasons);
+      setDressCodes(loadedDressCodes ? JSON.parse(loadedDressCodes) : initialDressCodes);
+      setBrands(loadedBrands ? JSON.parse(loadedBrands) : initialBrands);
+    } catch (error) {
+      console.error('Error loading tags', error);
+    }
+  };
+
+  const saveTags = async (updatedTags, tagType) => {
+    try {
+      await AsyncStorage.setItem(tagType, JSON.stringify(updatedTags));
+    } catch (error) {
+      console.error('Error saving tags', error);
+    }
+  };
+
+  const addNewTag = async () => {
     if (newTag) {
+      let updatedTags;
       switch (tagType) {
         case 'color':
-          setColors([...colors, newTag]);
-          setColor(newTag);
+          updatedTags = [...colors, newTag];
+          setColors(updatedTags);
+          if (color === '') setColor(newTag); // Seçili rengi güncelle
+          await saveTags(updatedTags, 'colors');
           break;
         case 'category':
-          setCategories([...categories, newTag]);
-          setCategory(newTag);
+          updatedTags = [...categories, newTag];
+          setCategories(updatedTags);
+          if (category === '') setCategory(newTag); // Seçili kategoriyi güncelle
+          await saveTags(updatedTags, 'categories');
           break;
         case 'season':
-          setSeasons([...seasons, newTag]);
-          setSeason(newTag);
+          updatedTags = [...seasons, newTag];
+          setSeasons(updatedTags);
+          if (season === '') setSeason(newTag); // Seçili sezonu güncelle
+          await saveTags(updatedTags, 'seasons');
           break;
         case 'dressCode':
-          setDressCodes([...dressCodes, newTag]);
-          setDressCode(newTag);
+          updatedTags = [...dressCodes, newTag];
+          setDressCodes(updatedTags);
+          if (dressCode === '') setDressCode(newTag); // Seçili giyim kodunu güncelle
+          await saveTags(updatedTags, 'dressCodes');
           break;
         case 'brand':
-          setBrands([...brands, newTag]);
-          setBrand(newTag);
+          updatedTags = [...brands, newTag];
+          setBrands(updatedTags);
+          if (brand === '') setBrand(newTag); // Seçili markayı güncelle
+          await saveTags(updatedTags, 'brands');
           break;
         default:
           break;
@@ -54,10 +102,21 @@ const TagForm = ({ onSave, initialTags }) => {
     }
   };
 
-  const handleSave = () => {
-    onSave({ color, category, season, dressCode, brand });
-    Alert.alert('Kayıt Başarılı', 'Etiketler başarıyla kaydedildi.', [{ text: 'Tamam' }]);
-    resetTags();
+  const handleSave = async () => {
+    const tagsToSave = { color, category, season, dressCode, brand };
+    try {
+      console.log('Saving tags:', tagsToSave);
+      const storedTags = await AsyncStorage.getItem('tags');
+      const parsedTags = storedTags ? JSON.parse(storedTags) : {};
+      const updatedTags = { ...parsedTags, [photoId]: tagsToSave };
+      await AsyncStorage.setItem('tags', JSON.stringify(updatedTags));
+      onSave(tagsToSave);
+      Alert.alert('Kayıt Başarılı', 'Etiketler başarıyla kaydedildi.', [{ text: 'Tamam' }]);
+      resetTags();
+    } catch (error) {
+      console.error('Error saving tags', error);
+      Alert.alert('Kayıt Hatası', 'Etiketler kaydedilirken bir hata oluştu.', [{ text: 'Tamam' }]);
+    }
   };
 
   const resetTags = () => {
@@ -74,7 +133,13 @@ const TagForm = ({ onSave, initialTags }) => {
         <Text style={styles.label}>Renk:</Text>
         <Picker
           selectedValue={color}
-          onValueChange={(itemValue) => setColor(itemValue)}
+          onValueChange={(itemValue) => {
+            if (itemValue === 'add') {
+              setTagType('color');
+            } else {
+              setColor(itemValue);
+            }
+          }}
           style={styles.picker}
         >
           <Picker.Item label="Seç" value="" />
@@ -83,23 +148,29 @@ const TagForm = ({ onSave, initialTags }) => {
           ))}
           <Picker.Item label="Ekle" value="add" />
         </Picker>
-        {color === "add" && (
+        {tagType === 'color' && (
           <View style={styles.addNewTag}>
             <TextInput
               style={styles.input}
               value={newTag}
               onChangeText={setNewTag}
               placeholder="Yeni Renk Ekle"
-              placeholderTextColor="gray" // Placeholder rengi eklendi
+              placeholderTextColor="gray"
             />
-            <Button title="Kaydet" onPress={() => { setTagType('color'); addNewTag(); }} />
+            <Button title="Kaydet" onPress={addNewTag} />
           </View>
         )}
 
         <Text style={styles.label}>Kategori:</Text>
         <Picker
           selectedValue={category}
-          onValueChange={(itemValue) => setCategory(itemValue)}
+          onValueChange={(itemValue) => {
+            if (itemValue === 'add') {
+              setTagType('category');
+            } else {
+              setCategory(itemValue);
+            }
+          }}
           style={styles.picker}
         >
           <Picker.Item label="Seç" value="" />
@@ -108,23 +179,29 @@ const TagForm = ({ onSave, initialTags }) => {
           ))}
           <Picker.Item label="Ekle" value="add" />
         </Picker>
-        {category === "add" && (
+        {tagType === 'category' && (
           <View style={styles.addNewTag}>
             <TextInput
               style={styles.input}
               value={newTag}
               onChangeText={setNewTag}
               placeholder="Yeni Kategori Ekle"
-              placeholderTextColor="gray" // Placeholder rengi eklendi
+              placeholderTextColor="gray"
             />
-            <Button title="Kaydet" onPress={() => { setTagType('category'); addNewTag(); }} />
+            <Button title="Kaydet" onPress={addNewTag} />
           </View>
         )}
 
         <Text style={styles.label}>Sezon:</Text>
         <Picker
           selectedValue={season}
-          onValueChange={(itemValue) => setSeason(itemValue)}
+          onValueChange={(itemValue) => {
+            if (itemValue === 'add') {
+              setTagType('season');
+            } else {
+              setSeason(itemValue);
+            }
+          }}
           style={styles.picker}
         >
           <Picker.Item label="Seç" value="" />
@@ -133,23 +210,29 @@ const TagForm = ({ onSave, initialTags }) => {
           ))}
           <Picker.Item label="Ekle" value="add" />
         </Picker>
-        {season === "add" && (
+        {tagType === 'season' && (
           <View style={styles.addNewTag}>
             <TextInput
               style={styles.input}
               value={newTag}
               onChangeText={setNewTag}
               placeholder="Yeni Sezon Ekle"
-              placeholderTextColor="gray" // Placeholder rengi eklendi
+              placeholderTextColor="gray"
             />
-            <Button title="Kaydet" onPress={() => { setTagType('season'); addNewTag(); }} />
+            <Button title="Kaydet" onPress={addNewTag} />
           </View>
         )}
 
         <Text style={styles.label}>Giyim Kodu:</Text>
         <Picker
           selectedValue={dressCode}
-          onValueChange={(itemValue) => setDressCode(itemValue)}
+          onValueChange={(itemValue) => {
+            if (itemValue === 'add') {
+              setTagType('dressCode');
+            } else {
+              setDressCode(itemValue);
+            }
+          }}
           style={styles.picker}
         >
           <Picker.Item label="Seç" value="" />
@@ -158,23 +241,29 @@ const TagForm = ({ onSave, initialTags }) => {
           ))}
           <Picker.Item label="Ekle" value="add" />
         </Picker>
-        {dressCode === "add" && (
+        {tagType === 'dressCode' && (
           <View style={styles.addNewTag}>
             <TextInput
               style={styles.input}
               value={newTag}
               onChangeText={setNewTag}
               placeholder="Yeni Giyim Kodu Ekle"
-              placeholderTextColor="gray" // Placeholder rengi eklendi
+              placeholderTextColor="gray"
             />
-            <Button title="Kaydet" onPress={() => { setTagType('dressCode'); addNewTag(); }} />
+            <Button title="Kaydet" onPress={addNewTag} />
           </View>
         )}
 
         <Text style={styles.label}>Marka:</Text>
         <Picker
           selectedValue={brand}
-          onValueChange={(itemValue) => setBrand(itemValue)}
+          onValueChange={(itemValue) => {
+            if (itemValue === 'add') {
+              setTagType('brand');
+            } else {
+              setBrand(itemValue);
+            }
+          }}
           style={styles.picker}
         >
           <Picker.Item label="Seç" value="" />
@@ -183,16 +272,16 @@ const TagForm = ({ onSave, initialTags }) => {
           ))}
           <Picker.Item label="Ekle" value="add" />
         </Picker>
-        {brand === "add" && (
+        {tagType === 'brand' && (
           <View style={styles.addNewTag}>
             <TextInput
               style={styles.input}
               value={newTag}
               onChangeText={setNewTag}
               placeholder="Yeni Marka Ekle"
-              placeholderTextColor="gray" // Placeholder rengi eklendi
+              placeholderTextColor="gray"
             />
-            <Button title="Kaydet" onPress={() => { setTagType('brand'); addNewTag(); }} />
+            <Button title="Kaydet" onPress={addNewTag} />
           </View>
         )}
       </ScrollView>
