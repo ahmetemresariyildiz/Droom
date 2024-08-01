@@ -1,31 +1,27 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Image, Alert, ScrollView, Text } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { PermissionsAndroid } from 'react-native';
 
 const AddClothes = ({ navigation }) => {
-  const [previewImage, setPreviewImage] = useState(null);
+  const [selectedImages, setSelectedImages] = useState([]);
 
-  const savePhotoToStorage = async (photoUri) => {
+  const savePhotoToStorage = async (photos) => {
     try {
-      let photos = [];
-      const storedPhotos = await AsyncStorage.getItem('user_photos');
-      if (storedPhotos !== null) {
-        photos = JSON.parse(storedPhotos);
+      let storedPhotos = [];
+      const storedPhotosData = await AsyncStorage.getItem('user_photos');
+      if (storedPhotosData !== null) {
+        storedPhotos = JSON.parse(storedPhotosData);
       }
 
-      if (!Array.isArray(photoUri)) {
-        photoUri = [photoUri];
-      }
-
-      photos = photos.concat(photoUri);
-
-      const jsonValue = JSON.stringify(photos);
+      storedPhotos = storedPhotos.concat(photos);
+      const jsonValue = JSON.stringify(storedPhotos);
       await AsyncStorage.setItem('user_photos', jsonValue);
+      return true;
     } catch (error) {
       console.error('Fotoğrafı kaydetme hatası:', error);
+      return false;
     }
   };
 
@@ -38,13 +34,12 @@ const AddClothes = ({ navigation }) => {
 
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
+      allowsEditing: false,
       quality: 1,
     });
 
-    if (!result.cancelled) {
-      setPreviewImage(result.assets[0].uri);
+    if (result && !result.cancelled && result.assets) {
+      setSelectedImages([result.assets[0].uri]);
     }
   };
 
@@ -57,29 +52,49 @@ const AddClothes = ({ navigation }) => {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
+      allowsMultipleSelection: true,
+      allowsEditing: false,
       quality: 1,
     });
 
-    if (!result.cancelled) {
-      setPreviewImage(result.assets[0].uri);
+    if (result && !result.canceled && result.assets) {
+      const uris = result.assets.map(asset => asset.uri);
+      setSelectedImages(uris);
     }
   };
 
   const handleConfirmPhoto = async () => {
-    if (previewImage) {
-      savePhotoToStorage(previewImage);
-      Alert.alert('Başarılı', 'Fotoğraf kaydedildi.');
-      setPreviewImage(null);
+    if (selectedImages.length > 0) {
+      Alert.alert(
+        'Onay',
+        'Seçili fotoğrafları eklemek istediğinize emin misiniz?',
+        [
+          {
+            text: 'İptal',
+            style: 'cancel',
+          },
+          {
+            text: 'Evet',
+            onPress: async () => {
+              const success = await savePhotoToStorage(selectedImages);
+              if (success) {
+                Alert.alert('Başarılı', 'Fotoğraflar kaydedildi.');
+                setSelectedImages([]);
+              } else {
+                Alert.alert('Hata', 'Fotoğraflar kaydedilirken bir sorun oluştu.');
+              }
+            },
+          },
+        ]
+      );
     }
   };
 
   const handleCancelPhoto = () => {
-    if (previewImage) {
+    if (selectedImages.length > 0) {
       Alert.alert(
         'Onay',
-        'Bu fotoğrafı silmek istediğinize emin misiniz?',
+        'Seçilen fotoğrafları silmek istediğinize emin misiniz?',
         [
           {
             text: 'Hayır',
@@ -87,7 +102,7 @@ const AddClothes = ({ navigation }) => {
           },
           {
             text: 'Evet',
-            onPress: () => setPreviewImage(null),
+            onPress: () => setSelectedImages([]),
           },
         ],
         { cancelable: false }
@@ -99,26 +114,32 @@ const AddClothes = ({ navigation }) => {
     <View style={styles.container}>
       <Text style={styles.title}>Kıyafet Ekle</Text>
       <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-        <Ionicons name="arrow-back" size={24} color="black" />
+        <Ionicons name="arrow-back" size={24} color="white" />
       </TouchableOpacity>
-      <TouchableOpacity style={styles.button} onPress={handleChoosePhotoFromCamera}>
-        <Text style={styles.buttonText}>Kamera ile Kıyafet Seç</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.button} onPress={handleChoosePhotoFromGallery}>
-        <Text style={styles.buttonText}>Galeriden Kıyafet Seç</Text>
-      </TouchableOpacity>
-      {previewImage && (
-        <View style={styles.imageContainer}>
-          <Image source={{ uri: previewImage }} style={styles.image} resizeMode="contain" />
+      <View style={styles.iconContainer}>
+        <TouchableOpacity style={styles.iconButton} onPress={handleChoosePhotoFromCamera}>
+          <Ionicons name="camera-outline" size={30} color="white" />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.iconButton} onPress={handleChoosePhotoFromGallery}>
+          <Ionicons name="images-outline" size={30} color="white" />
+        </TouchableOpacity>
+      </View>
+      {selectedImages.length > 0 && (
+        <ScrollView style={styles.scrollView}>
+          <View style={styles.imageContainer}>
+            {selectedImages.map((uri, index) => (
+              <Image key={index} source={{ uri }} style={styles.image} resizeMode="contain" />
+            ))}
+          </View>
           <View style={styles.buttonContainer}>
             <TouchableOpacity style={styles.confirmButton} onPress={handleConfirmPhoto}>
-              <Text style={styles.buttonText}>Onayla</Text>
+              <Text style={styles.confirmButtonText}>Onayla</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.cancelButton} onPress={handleCancelPhoto}>
-              <Text style={styles.buttonText}>İptal</Text>
+              <Text style={styles.cancelButtonText}>İptal</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </ScrollView>
       )}
     </View>
   );
@@ -127,48 +148,63 @@ const AddClothes = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
+    backgroundColor: '#f0f4f8',
     padding: 20,
   },
-  button: {
-    backgroundColor: 'dimgray',
-    paddingVertical: 20,
-    paddingHorizontal: 40,
-    borderRadius: 5,
-    marginTop: 20,
-  },
   title: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
+    color: '#333',
     textAlign: 'center',
     marginTop: 20,
-    color: 'black',
   },
   backButton: {
     position: 'absolute',
     top: 25,
     left: 20,
     zIndex: 1,
+    backgroundColor: '#3366ff',
+    borderRadius: 20,
+    padding: 5,
   },
-  buttonText: {
-    color: 'white',
-    fontSize: 18,
-    textAlign: 'center',
+  iconContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+    marginTop: 40,
+  },
+  iconButton: {
+    width: 80,
+    height: 80,
+    borderRadius: 10,
+    backgroundColor: '#3366ff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.8,
+    shadowRadius: 2,
+    elevation: 5,
+  },
+  scrollView: {
+    marginTop: 30,
+    width: '100%',
   },
   imageContainer: {
-    marginTop: 30,
-    alignItems: 'center',
-    width: '100%',
-    height: '50%',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
   },
   image: {
-    width: '100%',
-    height: '100%',
+    width: 100,
+    height: 100,
+    margin: 5,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#ddd',
   },
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    width: '100%',
     marginTop: 20,
   },
   confirmButton: {
@@ -182,6 +218,14 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 5,
+  },
+  confirmButtonText: {
+    color: 'white',
+    fontSize: 16,
+  },
+  cancelButtonText: {
+    color: 'white',
+    fontSize: 16,
   },
 });
 

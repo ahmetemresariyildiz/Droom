@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Image, TouchableOpacity, StyleSheet, Text, FlatList, Modal, Alert, ScrollView, Dimensions } from 'react-native';
+import { View, Image, TouchableOpacity, StyleSheet, Text, FlatList, Modal, Alert, ScrollView, Dimensions, TouchableWithoutFeedback } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import TagForm from './TagForm';
@@ -114,7 +114,6 @@ const Gardrop = ({ navigation }) => {
       { cancelable: true }
     );
   };
-  
 
   const handleCombine = () => {
     const validSelectedPhotos = selectedPhotos.filter(photo => photos.includes(photo));
@@ -158,18 +157,26 @@ const Gardrop = ({ navigation }) => {
         return photoTags[key] === newFilters[key];
       });
     });
-    setFilteredPhotos(filtered.length > 0 ? filtered : photos);
+    setFilteredPhotos(filtered);
     setFilterModalVisible(false);
   };
+  
 
   const renderPhotoItem = ({ item, index }) => (
     <TouchableOpacity onPress={() => handlePhotoPress(item, index)}>
-      <Image
-        source={{ uri: item }}
-        style={[styles.image, { borderColor: selectedPhotos.includes(item) ? 'black' : 'transparent' }]}
-      />
+      {item ? (
+        <Image
+          source={{ uri: item }}
+          style={[styles.image, { borderColor: selectedPhotos.includes(item) ? 'black' : 'transparent' }]}
+        />
+      ) : (
+        <View style={[styles.image, styles.placeholder]}>
+          <Text>Görsel bulunamadı</Text>
+        </View>
+      )}
     </TouchableOpacity>
   );
+  
 
   const numColumns = 4;
   const windowWidth = Dimensions.get('window').width;
@@ -181,8 +188,6 @@ const Gardrop = ({ navigation }) => {
         <Ionicons name="arrow-back" size={24} color="black" />
       </TouchableOpacity>
       <Text style={styles.title}>Gardrop</Text>
-
-      {modalVisible && <View style={styles.overlay} />}
 
       <FlatList
         data={filteredPhotos}
@@ -214,17 +219,21 @@ const Gardrop = ({ navigation }) => {
         visible={modalVisible}
         onRequestClose={closeModal}
       >
-        <View style={styles.modalContainer}>
-          <Image source={{ uri: filteredPhotos[selectedPhotoIndex] }} style={styles.modalImage} />
-        </View>
-        <View style={styles.modalBottomButtons}>
-          <TouchableOpacity style={styles.modalBottomButton} onPress={handleTagPhoto}>
-            <Text style={styles.modalBottomButtonText}>Etiketle</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.modalBottomButton} onPress={closeModal}>
-            <Text style={styles.modalBottomButtonText}>Kapat</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableWithoutFeedback onPress={closeModal}>
+          <View style={styles.modalWrapper}>
+            <View style={styles.modalContent}>
+              <Image source={{ uri: filteredPhotos[selectedPhotoIndex] }} style={styles.modalImage} />
+            </View>
+            <View style={styles.modalBottomButtons}>
+              <TouchableOpacity style={styles.modalBottomButton} onPress={handleTagPhoto}>
+                <Text style={styles.modalBottomButtonText}>Etiketle</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalBottomButton} onPress={closeModal}>
+                <Text style={styles.modalBottomButtonText}>Kapat</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
       </Modal>
 
       <Modal
@@ -233,14 +242,18 @@ const Gardrop = ({ navigation }) => {
         visible={tagModalVisible}
         onRequestClose={() => setTagModalVisible(false)}
       >
-        <View style={styles.tagModalContainer}>
-          <ScrollView contentContainerStyle={styles.tagModalContent}>
-            <TagForm
-              onSave={handleSaveTags}
-              initialTags={tags[selectedPhotos[0]] || tags[photos[selectedPhotoIndex]] || {}}
-            />
-          </ScrollView>
-        </View>
+        <TouchableWithoutFeedback onPress={() => setTagModalVisible(false)}>
+          <View style={styles.tagModalContainer}>
+            <TouchableWithoutFeedback>
+              <ScrollView contentContainerStyle={styles.tagModalContent}>
+                <TagForm
+                  onSave={handleSaveTags}
+                  initialTags={tags[selectedPhotos[0]] || tags[photos[selectedPhotoIndex]] || {}}
+                />
+              </ScrollView>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
       </Modal>
 
       {isMarking && (
@@ -260,26 +273,28 @@ const Gardrop = ({ navigation }) => {
         </View>
       )}
 
-      <View style={styles.bottomButtonsContainer}>
-        <TouchableOpacity
-          style={[styles.bottomButton, styles.markButton]}
-          onPress={handleMark}
-        >
-          <Text style={styles.bottomButtonText}>{isMarking ? 'İptal' : 'İşaretle'}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.bottomButton, styles.filterButton]}
-          onPress={() => setFilterModalVisible(true)}
-        >
-          <Text style={styles.bottomButtonText}>Filtrele</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.bottomButton, styles.tagButton]}
-          onPress={() => setTagModalVisible(true)}
-        >
-          <Text style={styles.bottomButtonText}>Etiketle</Text>
-        </TouchableOpacity>
-      </View>
+      {showButtons && (
+        <View style={styles.bottomButtonsContainer}>
+          <TouchableOpacity
+            style={[styles.bottomButton, styles.markButton]}
+            onPress={handleMark}
+          >
+            <Text style={styles.bottomButtonText}>{isMarking ? 'İptal' : 'İşaretle'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.bottomButton, styles.filterButton]}
+            onPress={() => setFilterModalVisible(true)}
+          >
+            <Text style={styles.bottomButtonText}>Filtrele</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.bottomButton, styles.tagButton]}
+            onPress={() => setTagModalVisible(true)}
+          >
+            <Text style={styles.bottomButtonText}>Etiketle</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 };
@@ -302,21 +317,28 @@ const styles = StyleSheet.create({
     margin: 5,
     borderWidth: 2,
   },
-  modalContainer: {
+  modalWrapper: {
     flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
   },
-  modalImage: {
+  modalContent: {
     width: '90%',
     height: '70%',
+  },
+  modalImage: {
+    width: '100%',
+    height: '100%',
     resizeMode: 'contain',
   },
   modalBottomButtons: {
     flexDirection: 'row',
     justifyContent: 'center',
     padding: 20,
+    width: '100%',
+    position: 'absolute',
+    bottom: 0,
   },
   modalBottomButton: {
     backgroundColor: '#2196F3',
@@ -405,10 +427,6 @@ const styles = StyleSheet.create({
   bottomButtonText: {
     color: '#fff',
     fontSize: 18,
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
 });
 

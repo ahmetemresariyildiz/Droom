@@ -3,16 +3,21 @@ import { View, Button, StyleSheet, Text, Modal, TouchableOpacity, Dimensions } f
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Picker } from '@react-native-picker/picker';
 
-const Filter = ({ visible, onClose, onFilter, onReset }) => {
+const Filter = ({ visible, onClose, onFilter, onReset, tagFormFilters }) => {
   const [color, setColor] = useState('');
   const [category, setCategory] = useState('');
   const [season, setSeason] = useState('');
   const [dressCode, setDressCode] = useState('');
   const [brand, setBrand] = useState('');
-  const [filters, setFilters] = useState({});
+  const [filters, setFilters] = useState({
+    colors: [],
+    categories: [],
+    seasons: [],
+    dressCodes: [],
+    brands: []
+  });
 
   useEffect(() => {
-    // AsyncStorage'dan etiket sınıflarını yükle
     const loadFilters = async () => {
       try {
         const loadedColors = await AsyncStorage.getItem('colors');
@@ -36,10 +41,45 @@ const Filter = ({ visible, onClose, onFilter, onReset }) => {
     loadFilters();
   }, []);
 
-  const handleFilter = () => {
-    onFilter({ color, category, season, dressCode, brand });
-    onClose();
+  useEffect(() => {
+    if (tagFormFilters) {
+      console.log('Updating filters with tagFormFilters:', tagFormFilters); // Debug log
+      setFilters((prevFilters) => ({
+        ...prevFilters,
+        colors: tagFormFilters.colors || prevFilters.colors,
+        categories: tagFormFilters.categories || prevFilters.categories,
+        seasons: tagFormFilters.seasons || prevFilters.seasons,
+        dressCodes: tagFormFilters.dressCodes || prevFilters.dressCodes,
+        brands: tagFormFilters.brands || prevFilters.brands,
+      }));
+    }
+  }, [tagFormFilters]);
+
+  const handleFilter = (newFilters) => {
+    console.log('Applying filters:', newFilters);
+    setFilters(newFilters);
+  
+    if (!photos) {
+      console.error('Photos array is undefined or null');
+      return;
+    }
+  
+    const filtered = photos.filter((photo) => {
+      const photoTags = tags[photo];
+      if (!photoTags) return false;
+      return Object.keys(newFilters).every((key) => {
+        if (!newFilters[key]) return true;
+        return photoTags[key] === newFilters[key];
+      });
+    });
+  
+    console.log('Filtered Photos:', filtered);
+    setFilteredPhotos(filtered.length > 0 ? filtered : photos);
+    setFilterModalVisible(false);
   };
+  
+  
+  
 
   const handleReset = () => {
     setColor('');
@@ -63,31 +103,31 @@ const Filter = ({ visible, onClose, onFilter, onReset }) => {
         <Text style={styles.title}>Filtrele</Text>
         <Picker selectedValue={color} onValueChange={(itemValue) => setColor(itemValue)} style={styles.picker}>
           <Picker.Item label="Renk Seçin" value="" />
-          {filters.colors?.map((color, index) => (
+          {filters.colors.map((color, index) => (
             <Picker.Item key={index} label={color} value={color} />
           ))}
         </Picker>
         <Picker selectedValue={category} onValueChange={(itemValue) => setCategory(itemValue)} style={styles.picker}>
           <Picker.Item label="Kategori Seçin" value="" />
-          {filters.categories?.map((category, index) => (
+          {filters.categories.map((category, index) => (
             <Picker.Item key={index} label={category} value={category} />
           ))}
         </Picker>
         <Picker selectedValue={season} onValueChange={(itemValue) => setSeason(itemValue)} style={styles.picker}>
           <Picker.Item label="Sezon Seçin" value="" />
-          {filters.seasons?.map((season, index) => (
+          {filters.seasons.map((season, index) => (
             <Picker.Item key={index} label={season} value={season} />
           ))}
         </Picker>
         <Picker selectedValue={dressCode} onValueChange={(itemValue) => setDressCode(itemValue)} style={styles.picker}>
           <Picker.Item label="Giyim Kodu Seçin" value="" />
-          {filters.dressCodes?.map((dressCode, index) => (
+          {filters.dressCodes.map((dressCode, index) => (
             <Picker.Item key={index} label={dressCode} value={dressCode} />
           ))}
         </Picker>
         <Picker selectedValue={brand} onValueChange={(itemValue) => setBrand(itemValue)} style={styles.picker}>
           <Picker.Item label="Marka Seçin" value="" />
-          {filters.brands?.map((brand, index) => (
+          {filters.brands.map((brand, index) => (
             <Picker.Item key={index} label={brand} value={brand} />
           ))}
         </Picker>
@@ -112,7 +152,9 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 20,
     marginHorizontal: 20,
-    marginTop: Dimensions.get('window').height * 0.3,
+    marginVertical: Dimensions.get('window').height * 0.3,
+    flex: 1,
+    justifyContent: 'center',
   },
   title: {
     fontSize: 20,
