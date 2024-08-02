@@ -78,11 +78,13 @@ const Gardrop = ({ navigation }) => {
   };
 
   const handleMark = () => {
-    setIsMarking(!isMarking);
-    if (!isMarking) {
+    if (isMarking) {
+      // İşaretleme modu kapatıldığında işaretli fotoğrafları temizle
       setSelectedPhotos([]);
     }
+    setIsMarking(!isMarking);
   };
+  
 
   const handleDelete = () => {
     Alert.alert(
@@ -96,15 +98,12 @@ const Gardrop = ({ navigation }) => {
         {
           text: 'Evet',
           onPress: () => {
-            // Seçilen fotoğrafları sil
             const updatedPhotos = photos.filter((photo) => !selectedPhotos.includes(photo));
             
-            // State güncelle
             setPhotos(updatedPhotos);
             setFilteredPhotos(updatedPhotos);
             setSelectedPhotos([]);
   
-            // AsyncStorage güncelle
             AsyncStorage.setItem('user_photos', JSON.stringify(updatedPhotos))
               .then(() => console.log('Fotoğraf başarıyla silindi.'))
               .catch((error) => console.error('Fotoğraf silinirken bir hata oluştu:', error));
@@ -164,18 +163,26 @@ const Gardrop = ({ navigation }) => {
 
   const renderPhotoItem = ({ item, index }) => (
     <TouchableOpacity onPress={() => handlePhotoPress(item, index)}>
-      {item ? (
-        <Image
-          source={{ uri: item }}
-          style={[styles.image, { borderColor: selectedPhotos.includes(item) ? 'black' : 'transparent' }]}
-        />
-      ) : (
-        <View style={[styles.image, styles.placeholder]}>
-          <Text>Görsel bulunamadı</Text>
-        </View>
-      )}
+      <View style={styles.photoContainer}>
+        {item ? (
+          <Image
+            source={{ uri: item }}
+            style={[styles.image, { borderColor: 'transparent' }]} // Çerçeve stilini kaldırıyoruz
+          />
+        ) : (
+          <View style={[styles.image, styles.placeholder]}>
+            <Text>Görsel bulunamadı</Text>
+          </View>
+        )}
+        {selectedPhotos.includes(item) && (
+          <View style={styles.checkmarkContainer}>
+            <View style={styles.checkmark} />
+          </View>
+        )}
+      </View>
     </TouchableOpacity>
   );
+  
   
 
   const numColumns = 4;
@@ -184,18 +191,22 @@ const Gardrop = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-        <Ionicons name="arrow-back" size={24} color="black" />
-      </TouchableOpacity>
-      <Text style={styles.title}>Gardrop</Text>
+      <View style={styles.headerContainer}>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <Ionicons name="arrow-back" size={24} color="black" />
+        </TouchableOpacity>
+        <Text style={styles.title}>Gardrop</Text>
+      </View>
 
-      <FlatList
-        data={filteredPhotos}
-        numColumns={numColumns}
-        keyExtractor={(item, index) => index.toString()}
-        contentContainerStyle={{ padding: 5 }}
-        renderItem={renderPhotoItem}
-      />
+      <View style={styles.photoListContainer}>
+        <FlatList
+          data={filteredPhotos}
+          numColumns={numColumns}
+          keyExtractor={(item, index) => index.toString()}
+          contentContainerStyle={{ padding: 1 }}
+          renderItem={renderPhotoItem}
+        />
+      </View>
 
       <Filter
         visible={filterModalVisible}
@@ -274,25 +285,29 @@ const Gardrop = ({ navigation }) => {
       )}
 
       {showButtons && (
-        <View style={styles.bottomButtonsContainer}>
-          <TouchableOpacity
-            style={[styles.bottomButton, styles.markButton]}
-            onPress={handleMark}
-          >
-            <Text style={styles.bottomButtonText}>{isMarking ? 'İptal' : 'İşaretle'}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.bottomButton, styles.filterButton]}
-            onPress={() => setFilterModalVisible(true)}
-          >
-            <Text style={styles.bottomButtonText}>Filtrele</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.bottomButton, styles.tagButton]}
-            onPress={() => setTagModalVisible(true)}
-          >
-            <Text style={styles.bottomButtonText}>Etiketle</Text>
-          </TouchableOpacity>
+        <View style={styles.bottomButtonsBackground}>
+          <View style={styles.bottomButtonsContainer}>
+            <TouchableOpacity
+              style={[styles.bottomButton, styles.markButton]}
+              onPress={handleMark}
+            >
+              <Text style={styles.bottomButtonText}>{isMarking ? 'İptal' : 'İşaretle'}</Text>
+            </TouchableOpacity>
+            <Text style={styles.divider}>|</Text>
+            <TouchableOpacity
+              style={[styles.bottomButton, styles.filterButton]}
+              onPress={() => setFilterModalVisible(true)}
+            >
+              <Text style={styles.bottomButtonText}>Filtrele</Text>
+            </TouchableOpacity>
+            <Text style={styles.divider}>|</Text>
+            <TouchableOpacity
+              style={[styles.bottomButton, styles.tagButton]}
+              onPress={() => setTagModalVisible(true)}
+            >
+              <Text style={styles.bottomButtonText}>Etiketle</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       )}
     </View>
@@ -305,11 +320,8 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     backgroundColor: '#fff',
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 10,
+  photoContainer: {
+    position: 'relative',
   },
   image: {
     width: Dimensions.get('window').width / 4 - 10,
@@ -317,6 +329,49 @@ const styles = StyleSheet.create({
     margin: 5,
     borderWidth: 2,
   },
+  checkmarkContainer: {
+    position: 'absolute',
+    top: 5,
+    right: 5,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: 'green', // Boş yuvarlağın sınır rengi
+    backgroundColor: 'transparent',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkmark: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: 'green', // Dolu yuvarlağın rengi
+  },
+  placeholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  backButton: {
+    position: 'absolute',
+    left: 10,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: 'black',
+  },
+  photoListContainer: {
+    flex: 1,
+    paddingBottom: 50,
+  },
+
   modalWrapper: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.8)',
@@ -352,9 +407,12 @@ const styles = StyleSheet.create({
   },
   actionButtonsContainer: {
     position: 'absolute',
-    top: 20,
-    right: 20,
+    top: 5,
+    right: -5,
     flexDirection: 'row',
+    backgroundColor: 'transparent',
+    borderRadius: 10,
+    padding: 5,
   },
   actionButton: {
     width: 50,
@@ -363,15 +421,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginHorizontal: 5,
+    borderColor: 'transparent', // Çöp kovası ve "D" harfi sınır rengini siyah yapıyoruz
+    borderWidth: 0, // Çevresindeki yuvarlak alana ihtiyacımız yok
+    backgroundColor: 'transparent', // Arka plan rengini saydam yapıyoruz
   },
   deleteButton: {
-    backgroundColor: 'red',
+    backgroundColor: 'black' // Çöp kovası butonunun stili burada yapılacak
   },
   combineButton: {
-    backgroundColor: '#2196F3',
+    backgroundColor: 'transparent' // "D" butonunun stili burada yapılacak
   },
   combineText: {
-    color: 'white',
+    color: 'black', // "D" harfini siyah yapıyoruz
     fontSize: 32,
     fontWeight: 'bold',
   },
@@ -393,40 +454,41 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     textAlign: 'center',
   },
-  backButton: {
+  bottomButtonsBackground: {
+    backgroundColor: '#fff',
     position: 'absolute',
-    top: 20,
-    left: 10,
-    zIndex: 1,
+    bottom: 10,
+    left: 0,
+    right: 0,
+    paddingVertical: 5,
+    paddingHorizontal: 5,
   },
   bottomButtonsContainer: {
     flexDirection: 'row',
-    position: 'absolute',
-    bottom: 20,
-    left: 0,
-    right: 0,
     justifyContent: 'space-around',
   },
   bottomButton: {
-    padding: 15,
+    padding: 10,
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
     marginHorizontal: 5,
     width: '30%',
+    borderRightWidth: 1,
+    borderRightColor: '#000',
   },
   markButton: {
-    backgroundColor: '#FFA500',
+    backgroundColor: '#FFFFFF',
   },
   filterButton: {
-    backgroundColor: '#FF1493',
+    backgroundColor: '#FFFFFF',
   },
   tagButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#FFFFFF',
   },
   bottomButtonText: {
-    color: '#fff',
-    fontSize: 18,
+    color: 'black',
+    fontSize: 16,
   },
 });
 
