@@ -14,6 +14,7 @@ const Combine = ({ navigation, route }) => {
   useEffect(() => {
     if (route.params && route.params.selectedPhotos) {
       setSelectedPhotos(route.params.selectedPhotos);
+      console.log('Received Selected Photos:', route.params.selectedPhotos);
     }
     fetchPhotos();
   }, [route.params]);
@@ -22,13 +23,15 @@ const Combine = ({ navigation, route }) => {
     const photosWithGestureStates = selectedPhotos.map(() => ({
       x: new Animated.Value(0),
       y: new Animated.Value(0),
-      scale: new Animated.Value(1), // Add scale value for pinch gesture
+      scale: new Animated.Value(1),
     }));
     setGestureStates(photosWithGestureStates);
   }, [selectedPhotos]);
 
   useEffect(() => {
-    setCombinedPhotos(selectedPhotos.map(index => galleryPhotos[index]));
+    if (selectedPhotos.length > 0) {
+      setCombinedPhotos(selectedPhotos.map(index => galleryPhotos[index]));
+    }
   }, [selectedPhotos, galleryPhotos]);
 
   const handleTogglePhotoSelection = (index) => {
@@ -50,17 +53,17 @@ const Combine = ({ navigation, route }) => {
     const gestureStatesRef = gestureStates[index];
     const initialScale = useRef(new Animated.Value(1)).current;
     const scale = useRef(new Animated.Value(1)).current;
-  
+
     const handlePanGestureEvent = Animated.event(
       [{ nativeEvent: { translationX: gestureStatesRef.x, translationY: gestureStatesRef.y } }],
       { useNativeDriver: false }
     );
-  
+
     const handlePinchGestureEvent = Animated.event(
       [{ nativeEvent: { scale: scale } }],
       { useNativeDriver: false }
     );
-  
+
     const handlePanGestureStateChange = ({ nativeEvent }) => {
       if (nativeEvent.oldState === State.ACTIVE) {
         gestureStatesRef.x.extractOffset();
@@ -69,15 +72,15 @@ const Combine = ({ navigation, route }) => {
         gestureStatesRef.y.setValue(0);
       }
     };
-  
+
     const handlePinchGestureStateChange = ({ nativeEvent }) => {
       if (nativeEvent.oldState === State.ACTIVE) {
-        initialScale.setValue(initialScale._value * scale._value); // Güncel ölçek değerini ayarla
+        initialScale.setValue(initialScale._value * scale._value);
         scale.setValue(1);
         scale.setOffset(0);
       }
     };
-  
+
     return (
       <PinchGestureHandler
         onGestureEvent={handlePinchGestureEvent}
@@ -110,21 +113,13 @@ const Combine = ({ navigation, route }) => {
       </PinchGestureHandler>
     );
   };
-  
-  
-  
-  
 
   const renderCombinedPhotos = () => {
-    return combinedPhotos.map((photo, index) => {
-      if (!photo || !photo.uri) {
-        console.error('Invalid URI for photo at index:', index);
-        return null;
-      }
-      return <CombinedPhoto key={index} photo={photo} index={index} />;
-    });
+    return combinedPhotos.filter(photo => photo && photo.uri).map((photo, index) => (
+      <CombinedPhoto key={index} photo={photo} index={index} />
+    ));
   };
-
+  
   const renderGalleryPhoto = () => {
     const rows = [];
     for (let i = 0; i < galleryPhotos.length; i += 4) {
@@ -133,7 +128,6 @@ const Combine = ({ navigation, route }) => {
         const index = i + j;
         const photo = galleryPhotos[index];
         if (!photo || !photo.uri) {
-          console.error('Invalid URI for photo at index:', index);
           continue;
         }
         rowPhotos.push(
@@ -164,7 +158,7 @@ const Combine = ({ navigation, route }) => {
       </ScrollView>
     );
   };
-
+  
   const fetchPhotos = async () => {
     try {
       const jsonValue = await AsyncStorage.getItem('user_photos');
@@ -291,6 +285,11 @@ const styles = StyleSheet.create({
   combinedPhotoImage: {
     width: 100,
     height: 100,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginVertical: 20,
   },
 });
 

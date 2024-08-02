@@ -30,28 +30,19 @@ const Gardrop = ({ navigation }) => {
     const loadPhotos = async () => {
       try {
         const storedPhotos = await AsyncStorage.getItem('user_photos');
-        const storedTags = await AsyncStorage.getItem('photo_tags');
         if (storedPhotos !== null) {
           const parsedPhotos = JSON.parse(storedPhotos);
           setPhotos(parsedPhotos);
           setFilteredPhotos(parsedPhotos);
-        } else {
-          setPhotos([]);
-          setFilteredPhotos([]);
-        }
-        if (storedTags !== null) {
-          const parsedTags = JSON.parse(storedTags);
-          setTags(parsedTags);
-        } else {
-          setTags({});
         }
       } catch (error) {
         console.error('Fotoğrafları alma hatası:', error);
       }
     };
-
+  
     loadPhotos();
   }, []);
+  
 
   useEffect(() => {
     if (selectedPhotos.length > 0) {
@@ -115,15 +106,21 @@ const Gardrop = ({ navigation }) => {
   };
 
   const handleCombine = () => {
+    console.log('Selected Photos:', selectedPhotos);
+    console.log('Photos List:', photos);
+  
     const validSelectedPhotos = selectedPhotos.filter(photo => photos.includes(photo));
-
+    console.log('Valid Selected Photos:', validSelectedPhotos);
+  
     if (validSelectedPhotos.length === selectedPhotos.length) {
-      navigation.navigate('Combine', { selectedPhotos });
+      const selectedPhotoIndices = validSelectedPhotos.map(photo => photos.indexOf(photo));
+      navigation.navigate('Combine', { selectedPhotos: selectedPhotoIndices });
+      console.log('Selected Photos Indices:', selectedPhotoIndices);
     } else {
       console.error('ERROR: Invalid URIs for photos:', selectedPhotos.filter(photo => !photos.includes(photo)));
     }
   };
-
+  
   const closeModal = () => {
     setModalVisible(false);
     setSelectedPhotoIndex(null);
@@ -233,7 +230,7 @@ const Gardrop = ({ navigation }) => {
         <TouchableWithoutFeedback onPress={closeModal}>
           <View style={styles.modalWrapper}>
             <View style={styles.modalContent}>
-              <Image source={{ uri: filteredPhotos[selectedPhotoIndex] }} style={styles.modalImage} />
+            <Image source={{ uri: filteredPhotos[selectedPhotoIndex] }} style={styles.modalImage} />
             </View>
             <View style={styles.modalBottomButtons}>
               <TouchableOpacity style={styles.modalBottomButton} onPress={handleTagPhoto}>
