@@ -114,14 +114,14 @@ const AddClothes = ({ navigation }) => {
     <View style={styles.container}>
       <Text style={styles.title}>Kıyafet Ekle</Text>
       <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-        <Ionicons name="arrow-back" size={24} color="white" />
+        <Ionicons name="arrow-back" size={24} color="black" />
       </TouchableOpacity>
       <View style={styles.iconContainer}>
         <TouchableOpacity style={styles.iconButton} onPress={handleChoosePhotoFromCamera}>
-          <Ionicons name="camera-outline" size={30} color="white" />
+          <Ionicons name="camera-outline" size={50} color="black" />
         </TouchableOpacity>
         <TouchableOpacity style={styles.iconButton} onPress={handleChoosePhotoFromGallery}>
-          <Ionicons name="images-outline" size={30} color="white" />
+          <Ionicons name="images-outline" size={50} color="black" />
         </TouchableOpacity>
       </View>
       {selectedImages.length > 0 && (
@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
     top: 25,
     left: 20,
     zIndex: 1,
-    backgroundColor: '#3366ff',
+    backgroundColor: 'transparent',
     borderRadius: 20,
     padding: 5,
   },
@@ -176,10 +176,10 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 10,
-    backgroundColor: '#3366ff',
+    backgroundColor: 'transparent',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: '#f0f4f8',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.8,
     shadowRadius: 2,
