@@ -10,11 +10,13 @@
     "test": "jest"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.17.1",
     "@react-native-async-storage/async-storage": "^1.24.0",
     "@react-native-community/masked-view": "^0.1.11",
     "@react-native-picker/picker": "^2.7.7",
     "@react-navigation/native": "^6.1.17",
     "@react-navigation/stack": "^6.3.29",
+    "dotenv": "^16.4.5",
     "expo": "^50.0.0",
     "expo-image-picker": "~14.7.1",
     "react": "18.2.0",

@@ -17,6 +17,10 @@ const HomeScreen = ({ navigation }) => {
           <Image source={require('./images/buttons/CombineButton.png')} style={styles.buttonIcon} />
           <Text style={styles.buttonText}>Kombin Yap</Text>
         </TouchableOpacity>
+        <TouchableOpacity style={[styles.button, styles.testButton]} onPress={() => navigation.navigate('TestButton')}>
+          <Image source={require('./images/buttons/CombineButton.png')} style={styles.buttonIcon} />
+          <Text style={styles.buttonText}>TestButton</Text>
+        </TouchableOpacity>
       </View>
     </ImageBackground>
   );
