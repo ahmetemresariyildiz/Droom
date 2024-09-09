@@ -3,20 +3,13 @@ import { View, Button, StyleSheet, Text, Modal, TouchableOpacity, Dimensions } f
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Picker } from '@react-native-picker/picker';
 
-const Filter = ({ 
-  visible, 
-  onClose, 
-  onFilter, 
-  onReset, 
-  tagFormFilters,
-  photos, // Bu props'u ekleyin
-  tags // Bu props'u ekleyin
-}) => {
+const Filter = ({ visible, onClose, onFilter, onReset, tagFormFilters }) => {
   const [color, setColor] = useState('');
   const [category, setCategory] = useState('');
   const [season, setSeason] = useState('');
   const [dressCode, setDressCode] = useState('');
   const [brand, setBrand] = useState('');
+
   const [filters, setFilters] = useState({
     colors: [],
     categories: [],
@@ -26,6 +19,7 @@ const Filter = ({
   });
 
   useEffect(() => {
+    // AsyncStorage'dan etiket sınıflarını yükle
     const loadFilters = async () => {
       try {
         const loadedColors = await AsyncStorage.getItem('colors');
@@ -64,33 +58,8 @@ const Filter = ({
   }, [tagFormFilters]);
 
   const handleFilter = () => {
-    const newFilters = {
-      color,
-      category,
-      season,
-      dressCode,
-      brand
-    };
-
-    console.log('Applying filters:', newFilters);
-
-    if (!photos || !tags) {
-      console.error('Photos array or tags object is undefined or null');
-      return;
-    }
-
-    const filtered = photos.filter((photo) => {
-      const photoTags = tags[photo];
-      if (!photoTags) return false;
-      return Object.keys(newFilters).every((key) => {
-        if (!newFilters[key]) return true;
-        return photoTags[key] === newFilters[key];
-      });
-    });
-
-    console.log('Filtered Photos:', filtered);
-    onFilter(filtered.length > 0 ? filtered : photos); // `onFilter` callback function is used to pass filtered results
-    onClose(); // Close the modal after applying filters
+    onFilter({ color, category, season, dressCode, brand });
+    onClose();
   };
 
   const handleReset = () => {
@@ -115,31 +84,31 @@ const Filter = ({
         <Text style={styles.title}>Filtrele</Text>
         <Picker selectedValue={color} onValueChange={(itemValue) => setColor(itemValue)} style={styles.picker}>
           <Picker.Item label="Renk Seçin" value="" />
-          {(filters.colors || []).map((color, index) => (
+          {filters.colors?.map((color, index) => (
             <Picker.Item key={index} label={color} value={color} />
           ))}
         </Picker>
         <Picker selectedValue={category} onValueChange={(itemValue) => setCategory(itemValue)} style={styles.picker}>
           <Picker.Item label="Kategori Seçin" value="" />
-          {(filters.categories || []).map((category, index) => (
+          {filters.categories?.map((category, index) => (
             <Picker.Item key={index} label={category} value={category} />
           ))}
         </Picker>
         <Picker selectedValue={season} onValueChange={(itemValue) => setSeason(itemValue)} style={styles.picker}>
           <Picker.Item label="Sezon Seçin" value="" />
-          {(filters.seasons || []).map((season, index) => (
+          {filters.seasons?.map((season, index) => (
             <Picker.Item key={index} label={season} value={season} />
           ))}
         </Picker>
         <Picker selectedValue={dressCode} onValueChange={(itemValue) => setDressCode(itemValue)} style={styles.picker}>
           <Picker.Item label="Giyim Kodu Seçin" value="" />
-          {(filters.dressCodes || []).map((dressCode, index) => (
+          {filters.dressCodes?.map((dressCode, index) => (
             <Picker.Item key={index} label={dressCode} value={dressCode} />
           ))}
         </Picker>
         <Picker selectedValue={brand} onValueChange={(itemValue) => setBrand(itemValue)} style={styles.picker}>
           <Picker.Item label="Marka Seçin" value="" />
-          {(filters.brands || []).map((brand, index) => (
+          {filters.brands?.map((brand, index) => (
             <Picker.Item key={index} label={brand} value={brand} />
           ))}
         </Picker>
@@ -164,9 +133,9 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 20,
     marginHorizontal: 20,
-    marginVertical: Dimensions.get('window').height * 0.3,
-    flex: 1,
-    justifyContent: 'center',
+    height: '80%',
+    marginVertical: Dimensions.get('window').height * 0.1,
+    justifyContent: 'space-between',
   },
   title: {
     fontSize: 20,
@@ -178,11 +147,15 @@ const styles = StyleSheet.create({
     height: 50,
     width: '100%',
     marginBottom: 10,
+    backgroundColor: '#f0f0f0', // Picker'ların arka plan rengini belirleyelim
+    color: '#000', // Picker seçimlerinin görünürlüğünü artırmak için
   },
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    marginTop: 20,
   },
 });
+
 
 export default Filter;
