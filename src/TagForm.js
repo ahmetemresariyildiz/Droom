@@ -3,6 +3,7 @@ import { View, Button, StyleSheet, ScrollView, Text, TextInput, Alert } from 're
 import { Picker } from '@react-native-picker/picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+// Başlangıç renkleri, kategoriler, sezonlar, giyim kodları ve markalar
 const initialColors = ['Kırmızı', 'Mavi', 'Yeşil'];
 const initialCategories = ['Günlük', 'Resmi'];
 const initialSeasons = ['Yaz', 'Kış'];
@@ -10,6 +11,7 @@ const initialDressCodes = ['Spor', 'Klasik'];
 const initialBrands = ['Nike', 'Adidas'];
 
 const TagForm = ({ onSave, initialTags, photoId }) => {
+  // State değişkenlerini tanımla
   const [color, setColor] = useState(initialTags.color || '');
   const [category, setCategory] = useState(initialTags.category || '');
   const [season, setSeason] = useState(initialTags.season || '');
@@ -18,47 +20,79 @@ const TagForm = ({ onSave, initialTags, photoId }) => {
   const [newTag, setNewTag] = useState('');
   const [tagType, setTagType] = useState(null);
 
+  // Dinamik etiketler için state değişkenleri
   const [colors, setColors] = useState(initialColors);
   const [categories, setCategories] = useState(initialCategories);
   const [seasons, setSeasons] = useState(initialSeasons);
   const [dressCodes, setDressCodes] = useState(initialDressCodes);
   const [brands, setBrands] = useState(initialBrands);
 
+  // Bileşen yüklendiğinde etiketleri yükle
   useEffect(() => {
     loadTags();
-  }, []); // Boş bağımlılık dizisi ile sadece bileşen ilk kez yüklendiğinde çalışır.
+    loadPhotoTags(); // Mevcut fotoğrafların etiketlerini de yükle
+  }, [photoId]);
+   // Boş bağımlılık dizisi ile sadece bileşen ilk kez yüklendiğinde çalışır.
+
+   const loadPhotoTags = async () => {
+    try {
+      const storedTags = await AsyncStorage.getItem('photo_tags');
+      const parsedTags = storedTags ? JSON.parse(storedTags) : {};
+      if (parsedTags[photoId]) {
+        const { color, category, season, dressCode, brand } = parsedTags[photoId];
+        setColor(color || '');
+        setCategory(category || '');
+        setSeason(season || '');
+        setDressCode(dressCode || '');
+        setBrand(brand || '');
+      }
+    } catch (error) {
+      console.error('Error loading photo tags:', error);
+    }
+  };
+  
 
   const loadTags = async () => {
     try {
-      const loadedColors = await AsyncStorage.getItem('colors');
-      const loadedCategories = await AsyncStorage.getItem('categories');
-      const loadedSeasons = await AsyncStorage.getItem('seasons');
-      const loadedDressCodes = await AsyncStorage.getItem('dressCodes');
-      const loadedBrands = await AsyncStorage.getItem('brands');
-
-      console.log('Loaded colors:', loadedColors);
-      console.log('Loaded categories:', loadedCategories);
-      console.log('Loaded seasons:', loadedSeasons);
-      console.log('Loaded dress codes:', loadedDressCodes);
-      console.log('Loaded brands:', loadedBrands);
-
-      setColors(loadedColors ? JSON.parse(loadedColors) : initialColors);
-      setCategories(loadedCategories ? JSON.parse(loadedCategories) : initialCategories);
-      setSeasons(loadedSeasons ? JSON.parse(loadedSeasons) : initialSeasons);
-      setDressCodes(loadedDressCodes ? JSON.parse(loadedDressCodes) : initialDressCodes);
-      setBrands(loadedBrands ? JSON.parse(loadedBrands) : initialBrands);
+      const storedTags = await AsyncStorage.getItem('photo_tags');
+      if (storedTags) {
+        const parsedTags = JSON.parse(storedTags);
+        console.log('Parsed tags:', parsedTags);
+        if (parsedTags[photoId]) {
+          // Kaydedilen etiketleri fotoğraf için yükle
+          const { color, category, season, dressCode, brand } = parsedTags[photoId];
+          setColor(color || '');
+          setCategory(category || '');
+          setSeason(season || '');
+          setDressCode(dressCode || '');
+          setBrand(brand || '');
+        }
+      }
     } catch (error) {
-      console.error('Error loading tags', error);
+      console.error('Etiketler yüklenirken hata oluştu:', error);
     }
   };
+  
 
-  const saveTags = async (updatedTags, tagType) => {
+  const saveTags = async (updatedTags) => {
+    if (!photoId) return; // photoId boşsa işlem yapma
+    
     try {
-      await AsyncStorage.setItem(tagType, JSON.stringify(updatedTags));
+      const existingTagsString = await AsyncStorage.getItem('photo_tags');
+      const existingTags = existingTagsString ? JSON.parse(existingTagsString) : {};
+      
+      // Mevcut etiketleri güncelle
+      const updatedPhotoTags = { ...existingTags, [photoId]: updatedTags };
+      
+      await AsyncStorage.setItem('photo_tags', JSON.stringify(updatedPhotoTags));
+      console.log('Tags saved successfully for photo:', photoId);
+      
+      onSave(updatedTags); // Yeni etiketleri kaydetmeden önce geri döndür
     } catch (error) {
-      console.error('Error saving tags', error);
+      console.error('Error saving tags:', error);
     }
   };
+  
 
   const addNewTag = async () => {
     if (newTag) {
@@ -97,29 +131,40 @@ const TagForm = ({ onSave, initialTags, photoId }) => {
         default:
           break;
       }
+      // Yeni etiketi sıfırla ve etiket türünü sıfırla
       setNewTag('');
       setTagType(null);
     }
   };
 
   const handleSave = async () => {
-    const tagsToSave = { color, category, season, dressCode, brand };
+    // Kaydedilecek etiketleri oluştur
+    const tagsToSave = { color, season, dressCode, brand };
+  
     try {
-      console.log('Saving tags:', tagsToSave);
-      const storedTags = await AsyncStorage.getItem('tags');
+      // Fotoğraf URI'sini belirle
+      const photoUri = initialTags.uri;
+  
+      // Veritabanındaki mevcut etiketleri al
+      const storedTags = await AsyncStorage.getItem('photo_tags');
       const parsedTags = storedTags ? JSON.parse(storedTags) : {};
-      const updatedTags = { ...parsedTags, [photoId]: tagsToSave };
-      await AsyncStorage.setItem('tags', JSON.stringify(updatedTags));
+  
+      // Fotoğraf URI'si ile etiketleri güncelle
+      const updatedTags = { ...parsedTags, [photoUri]: tagsToSave };
+      await AsyncStorage.setItem('photo_tags', JSON.stringify(updatedTags));
+  
+      // Başarılı uyarı göster
+      Alert.alert('Etiketleme Başarılı', 'Etiketleme başarıyla yapıldı.', [{ text: 'Tamam' }]);
       onSave(tagsToSave);
-      Alert.alert('Kayıt Başarılı', 'Etiketler başarıyla kaydedildi.', [{ text: 'Tamam' }]);
-      resetTags();
     } catch (error) {
-      console.error('Error saving tags', error);
-      Alert.alert('Kayıt Hatası', 'Etiketler kaydedilirken bir hata oluştu.', [{ text: 'Tamam' }]);
+      // Hata oluşursa uyarı göster ve konsola hata mesajı yazdır
+      console.error('Etiketler kaydedilirken hata oluştu', error);
+      Alert.alert('Etiketleme Hatası', 'Etiketler kaydedilirken bir hata oluştu.', [{ text: 'Tamam' }]);
     }
   };
 
   const resetTags = () => {
+    // Etiketleri sıfırla
     setColor('');
     setCategory('');
     setSeason('');
@@ -131,6 +176,7 @@ const TagForm = ({ onSave, initialTags, photoId }) => {
   return (
     <View style={styles.container}>
       <ScrollView style={styles.scrollView}>
+        {/* Renk seçimi */}
         <Text style={styles.label}>Renk:</Text>
         <Picker
           selectedValue={color}
@@ -162,6 +208,7 @@ const TagForm = ({ onSave, initialTags, photoId }) => {
           </View>
         )}
 
+        {/* Kategori seçimi */}
         <Text style={styles.label}>Kategori:</Text>
         <Picker
           selectedValue={category}
@@ -193,6 +240,7 @@ const TagForm = ({ onSave, initialTags, photoId }) => {
           </View>
         )}
 
+        {/* Sezon seçimi */}
         <Text style={styles.label}>Sezon:</Text>
         <Picker
           selectedValue={season}
@@ -224,6 +272,7 @@ const TagForm = ({ onSave, initialTags, photoId }) => {
           </View>
         )}
 
+        {/* Giyim kodu seçimi */}
         <Text style={styles.label}>Giyim Kodu:</Text>
         <Picker
           selectedValue={dressCode}
@@ -255,6 +304,7 @@ const TagForm = ({ onSave, initialTags, photoId }) => {
           </View>
         )}
 
+        {/* Marka seçimi */}
         <Text style={styles.label}>Marka:</Text>
         <Picker
           selectedValue={brand}
@@ -286,6 +336,7 @@ const TagForm = ({ onSave, initialTags, photoId }) => {
           </View>
         )}
       </ScrollView>
+      {/* Etiketleri sıfırlama ve kaydetme butonları */}
       <View style={styles.buttonRow}>
         <Button title="Etiketleri Sıfırla" onPress={resetTags} />
         <Button title="Kaydet" onPress={handleSave} />
@@ -294,6 +345,7 @@ const TagForm = ({ onSave, initialTags, photoId }) => {
   );
 };
 
+// Stil tanımları
 const styles = StyleSheet.create({
   container: {
     flex: 1,
